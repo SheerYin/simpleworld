@@ -18,6 +18,8 @@ class WorldsManager(val simpleWorlds: SimpleWorlds, val worldsConfiguration: Wor
     val worldByName = hashMapOf<String, WorldState>()
     val sortedWorlds = arrayListOf<WorldState>()
 
+    private var unmanagedSections = mapOf<String, WorldsConfiguration.Worlds.WorldSection>()
+
     private fun add(worldState: WorldState) {
         worldByName[worldState.name] = worldState
         val index = sortedWorlds.binarySearch { it.name.compareTo(worldState.name) }
@@ -38,19 +40,25 @@ class WorldsManager(val simpleWorlds: SimpleWorlds, val worldsConfiguration: Wor
 
     fun load() {
         val worlds = worldsConfiguration.load()
+        val unmanaged = hashMapOf<String, WorldsConfiguration.Worlds.WorldSection>()
 
         for ((name, worldSection) in worlds.worlds) {
-            var world = server.getWorld(name)
+            val world = server.getWorld(name)
             if (world == null) {
-                val environment = if (worldSection.environment.isEmpty()) {
-                    World.Environment.NORMAL
-                } else {
-                    World.Environment.valueOf(worldSection.environment)
-                }
-                val type = worldSection.type?.let { WorldType.getByName(it) }
-                world = createWorld(name, worldSection.seed, environment, type, worldSection.generator)
+                // Folia 不允许运行时 createWorld，先把条目留住，save 时原样写回
+                simpleWorlds.slF4JLogger.warn("世界 $name 未被服务端加载，跳过（请在 bukkit.yml 注册）")
+                unmanaged[name] = worldSection
+                continue
+                // 原 Paper 路径：未加载则尝试 createWorld
+                // val environment = if (worldSection.environment.isEmpty()) {
+                //     World.Environment.NORMAL
+                // } else {
+                //     World.Environment.valueOf(worldSection.environment)
+                // }
+                // val type = worldSection.type?.let { WorldType.getByName(it) }
+                // world = createWorld(name, worldSection.seed, environment, type, worldSection.generator)
+                // if (world == null) continue
             }
-            if (world == null) continue
             if (worldSection.difficulty.isNotEmpty()) {
                 world.difficulty = Difficulty.valueOf(worldSection.difficulty)
             }
@@ -74,11 +82,17 @@ class WorldsManager(val simpleWorlds: SimpleWorlds, val worldsConfiguration: Wor
             val worldState = WorldState(name, world, worldSection.type, worldSection.generator, gameRules)
             add(worldState)
         }
+
+        unmanagedSections = unmanaged
     }
 
     fun save() {
         val worlds = WorldsConfiguration.Worlds()
 
+        // 先放未加载的原始条目，避免被抹掉
+        worlds.worlds.putAll(unmanagedSections)
+
+        // 再用内存里管理中的世界覆盖
         for ((name, worldState) in worldByName) {
             val world = worldState.world
             val worldSection = WorldsConfiguration.Worlds.WorldSection(

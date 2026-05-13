@@ -20,9 +20,10 @@ class SimpleWorldsCommand(
             val support = CommandSupport(plugin)
             val rootCommand = Commands.literal(rootName)
                 .requires { support.hasPermission(it, rootPermission) }
-                .then(CreateCommand(support, worldsManager).root())
-                .then(LoadCommand(support, worldsManager).root())
-                .then(UnloadCommand(support, worldsManager).root())
+                // Folia 不支持运行时 createWorld / unloadWorld，相关命令暂不注册
+                // .then(CreateCommand(support, worldsManager).root())
+                // .then(LoadCommand(support, worldsManager).root())
+                // .then(UnloadCommand(support, worldsManager).root())
                 .then(ReloadCommand(support, worldsManager).root())
                 .then(SaveCommand(support, worldsManager).root())
                 .then(TeleportCommand(support, worldsManager).root())

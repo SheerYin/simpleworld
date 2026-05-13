@@ -2,12 +2,14 @@ package me.yin.simpleworlds.command
 
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
+import com.mojang.brigadier.builder.RequiredArgumentBuilder
+import com.mojang.brigadier.context.CommandContext
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import me.yin.simpleworlds.command.support.CommandSupport
 import me.yin.simpleworlds.world.WorldsManager
-import net.kyori.adventure.text.Component
 import org.bukkit.Location
+import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 
 class TeleportCommand(
@@ -15,65 +17,46 @@ class TeleportCommand(
     private val worldsManager: WorldsManager
 ) {
 
-    private val server = support.plugin.server
+    private val permission = "simpleworlds.command.teleport"
+    private val permissionTarget = "simpleworlds.command.teleport.target"
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("teleport")
-            .requires { support.hasPermission(it, "simpleworlds.command.teleport") }
-            .then(Commands.argument("world", StringArgumentType.word())
-                .suggests { _, builder ->
-                    val remaining = builder.remainingLowerCase
-                    for (world in server.worlds) {
-                        val name = world.name
-                        if (remaining.isEmpty() || name.startsWith(remaining, true)) {
-                            builder.suggest(name)
-                        }
-                    }
-                    builder.buildFuture()
-                }
-                .executes { context ->
-                    val player = support.requirePlayer(context.source.sender) ?: return@executes 0
-                    val worldName = StringArgumentType.getString(context, "world")
-                    val world = server.getWorld(worldName)
-                    if (world == null) {
-                        support.sendMessage(player, Component.text("世界 $worldName 不存在"))
-                        return@executes 0
-                    }
-                    teleport(player, world.spawnLocation)
-                    return@executes 1
-                }
-                .then(Commands.argument("player", StringArgumentType.word())
-                    .suggests { _, builder ->
-                        val remaining = builder.remainingLowerCase
-                        for (online in server.onlinePlayers) {
-                            val name = online.name
-                            if (remaining.isEmpty() || name.startsWith(remaining, true)) {
-                                builder.suggest(name)
-                            }
-                        }
-                        builder.buildFuture()
-                    }
-                    .executes { context ->
-                        val sender = context.source.sender
-                        val worldName = StringArgumentType.getString(context, "world")
-                        val targetName = StringArgumentType.getString(context, "player")
-
-                        val target = server.getPlayerExact(targetName)
-                        if (target == null) {
-                            support.sendMessage(sender, Component.text("玩家 $targetName 不在线"))
-                            return@executes 0
-                        }
-
-                        val world = worldsManager.worldByName[worldName]?.world ?: server.getWorld(worldName)
-                        if (world == null) {
-                            support.sendMessage(sender, Component.text("世界 $worldName 不存在"))
-                            return@executes 0
-                        }
-                        teleport(target, world.spawnLocation)
-                        return@executes 1
-                    }
+            .requires { support.hasPermission(it, permission) }
+            .then(worldArgument()
+                .executes { context -> teleportSelf(context) }
+                .then(support.playerTargetArgument()
+                    .requires { support.hasPermission(it, permissionTarget) }
+                    .executes { context -> teleportTarget(context) }
                 )
             )
+    }
+
+    private fun teleportSelf(context: CommandContext<CommandSourceStack>): Int {
+        val player = support.requirePlayer(context.source.sender) ?: return 0
+        val worldName = StringArgumentType.getString(context, "world")
+        val location = resolveSpawn(player, worldName) ?: return 0
+        teleport(player, location)
+        return 1
+    }
+
+    private fun teleportTarget(context: CommandContext<CommandSourceStack>): Int {
+        val sender = context.source.sender
+        val targetName = StringArgumentType.getString(context, "target")
+        val target = support.resolveTarget(sender, targetName) ?: return 0
+        val worldName = StringArgumentType.getString(context, "world")
+        val location = resolveSpawn(sender, worldName) ?: return 0
+        target.scheduler.run(support.plugin, { teleport(target, location) }, null)
+        return 1
+    }
+
+    private fun resolveSpawn(sender: CommandSender, worldName: String): Location? {
+        val world = worldsManager.worldByName[worldName]?.world ?: support.plugin.server.getWorld(worldName)
+        if (world == null) {
+            sender.sendMessage(support.message("世界 $worldName 不存在"))
+            return null
+        }
+        return world.spawnLocation
     }
 
     private fun teleport(player: Player, location: Location) {
@@ -82,5 +65,19 @@ class TeleportCommand(
             passenger.leaveVehicle()
         }
         player.teleportAsync(location)
+    }
+
+    private fun worldArgument(): RequiredArgumentBuilder<CommandSourceStack, String> {
+        return Commands.argument("world", StringArgumentType.word())
+            .suggests { _, builder ->
+                val remaining = builder.remainingLowerCase
+                for (world in support.plugin.server.worlds) {
+                    val name = world.name
+                    if (remaining.isEmpty() || name.startsWith(remaining, true)) {
+                        builder.suggest(name)
+                    }
+                }
+                builder.buildFuture()
+            }
     }
 }
