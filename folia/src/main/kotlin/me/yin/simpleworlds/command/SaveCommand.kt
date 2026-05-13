@@ -20,7 +20,7 @@ class SaveCommand(
                 support.sendMessage(sender, Component.text("正在保存…"))
                 worldsManager.save()
                 support.sendMessage(sender, Component.text("保存完成"))
-                1
+                return@executes 1
             }
     }
 }

@@ -41,7 +41,7 @@ class TeleportLocationCommand(
                         return@executes 0
                     }
                     teleport(player, location)
-                    1
+                    return@executes 1
                 }
                 .then(Commands.argument("player", StringArgumentType.word())
                     .suggests { _, builder ->
@@ -70,7 +70,7 @@ class TeleportLocationCommand(
                             return@executes 0
                         }
                         teleport(target, location)
-                        1
+                        return@executes 1
                     }
                 )
             )

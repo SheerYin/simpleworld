@@ -40,7 +40,7 @@ class TeleportCommand(
                         return@executes 0
                     }
                     teleport(player, world.spawnLocation)
-                    1
+                    return@executes 1
                 }
                 .then(Commands.argument("player", StringArgumentType.word())
                     .suggests { _, builder ->
@@ -64,13 +64,13 @@ class TeleportCommand(
                             return@executes 0
                         }
 
-                        val world = worldsManager.map1[worldName]?.world ?: server.getWorld(worldName)
+                        val world = worldsManager.worldByName[worldName]?.world ?: server.getWorld(worldName)
                         if (world == null) {
                             support.sendMessage(sender, Component.text("世界 $worldName 不存在"))
                             return@executes 0
                         }
                         teleport(target, world.spawnLocation)
-                        1
+                        return@executes 1
                     }
                 )
             )

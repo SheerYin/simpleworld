@@ -54,7 +54,7 @@ class LoadCommand(
                     worldsManager.loadWorld(worldName)
                     worldsManager.save()
                     support.sendMessage(sender, Component.text("世界 $worldName 加载完成"))
-                    1
+                    return@executes 1
                 }
                 .then(Commands.argument("chunk_generator", StringArgumentType.string())
                     .executes { context ->
@@ -67,7 +67,7 @@ class LoadCommand(
                         worldsManager.loadWorld(worldName, generator)
                         worldsManager.save()
                         support.sendMessage(sender, Component.text("世界 $worldName 加载完成"))
-                        1
+                        return@executes 1
                     }
                 )
             )

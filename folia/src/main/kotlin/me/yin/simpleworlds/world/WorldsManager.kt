@@ -2,6 +2,7 @@ package me.yin.simpleworlds.world
 
 import me.yin.simpleworlds.SimpleWorlds
 import me.yin.simpleworlds.configuration.WorldsConfiguration
+import me.yin.simpleworlds.model.WorldState
 import org.bukkit.Difficulty
 import org.bukkit.GameRule
 import org.bukkit.NamespacedKey
@@ -14,26 +15,23 @@ class WorldsManager(val simpleWorlds: SimpleWorlds, val worldsConfiguration: Wor
 
     val server = simpleWorlds.server
 
-    private val worldByName = hashMapOf<String, WorldState>()
-    private var sortedWorld = arrayListOf<WorldState>()
+    val worldByName = hashMapOf<String, WorldState>()
+    val sortedWorlds = arrayListOf<WorldState>()
 
-    val map1: Map<String, WorldState> get() = worldByName
-    val v2: List<WorldState> get() = sortedWorld
-
-    fun add1(worldState: WorldState) {
+    private fun add(worldState: WorldState) {
         worldByName[worldState.name] = worldState
-        val index = sortedWorld.binarySearch { it.name.compareTo(worldState.name) }
+        val index = sortedWorlds.binarySearch { it.name.compareTo(worldState.name) }
         if (index < 0) {
             val insertionPoint = -(index + 1)
-            sortedWorld.add(insertionPoint, worldState)
+            sortedWorlds.add(insertionPoint, worldState)
         }
     }
 
-    fun remove1(name: String): WorldState? {
+    private fun remove(name: String): WorldState? {
         val worldState = worldByName.remove(name) ?: return null
-        val index = sortedWorld.binarySearch { it.name.compareTo(name) }
+        val index = sortedWorlds.binarySearch { it.name.compareTo(name) }
         if (index >= 0) {
-            sortedWorld.removeAt(index)
+            sortedWorlds.removeAt(index)
         }
         return worldState
     }
@@ -74,14 +72,14 @@ class WorldsManager(val simpleWorlds: SimpleWorlds, val worldsConfiguration: Wor
             }
 
             val worldState = WorldState(name, world, worldSection.type, worldSection.generator, gameRules)
-            add1(worldState)
+            add(worldState)
         }
     }
 
     fun save() {
         val worlds = WorldsConfiguration.Worlds()
 
-        for ((name, worldState) in map1) {
+        for ((name, worldState) in worldByName) {
             val world = worldState.world
             val worldSection = WorldsConfiguration.Worlds.WorldSection(
                 world.seed,
@@ -119,7 +117,7 @@ class WorldsManager(val simpleWorlds: SimpleWorlds, val worldsConfiguration: Wor
         val world = worldCreator.createWorld()
         if (world != null) {
             val worldState = WorldState(name, world, worldType?.name, chunkGenerator)
-            add1(worldState)
+            add(worldState)
         }
         return world
     }
@@ -133,21 +131,13 @@ class WorldsManager(val simpleWorlds: SimpleWorlds, val worldsConfiguration: Wor
         val world = worldCreator.createWorld()
         if (world != null) {
             val worldState = WorldState(name, world, null, chunkGenerator)
-            add1(worldState)
+            add(worldState)
         }
         return world
     }
 
     fun unloadWorld(name: String) {
-        remove1(name)
+        remove(name)
         server.unloadWorld(name, true)
     }
-
-    class WorldState(
-        val name: String,
-        val world: World,
-        val type: String?,
-        var chunkGenerator: String? = null,
-        val gameRules: HashMap<String, String> = hashMapOf()
-    )
 }

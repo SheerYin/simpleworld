@@ -32,7 +32,7 @@ class CreateCommand(
                     worldsManager.createWorld(worldName)
                     worldsManager.save()
                     support.sendMessage(sender, Component.text("世界 $worldName 创建完成"))
-                    1
+                    return@executes 1
                 }
                 .then(Commands.argument("seed", StringArgumentType.word())
                     .suggests { _, builder ->
@@ -49,7 +49,7 @@ class CreateCommand(
                         worldsManager.createWorld(worldName, seed)
                         worldsManager.save()
                         support.sendMessage(sender, Component.text("世界 $worldName 创建完成"))
-                        1
+                        return@executes 1
                     }
                     .then(Commands.argument("environment", StringArgumentType.word())
                         .suggests { _, builder ->
@@ -73,7 +73,7 @@ class CreateCommand(
                             worldsManager.createWorld(worldName, seed, environment)
                             worldsManager.save()
                             support.sendMessage(sender, Component.text("世界 $worldName 创建完成"))
-                            1
+                            return@executes 1
                         }
                         .then(Commands.argument("type", StringArgumentType.word())
                             .suggests { _, builder ->
@@ -98,7 +98,7 @@ class CreateCommand(
                                 worldsManager.createWorld(worldName, seed, environment, type)
                                 worldsManager.save()
                                 support.sendMessage(sender, Component.text("世界 $worldName 创建完成"))
-                                1
+                                return@executes 1
                             }
                             .then(Commands.argument("chunk_generator", StringArgumentType.string())
                                 .executes { context ->
@@ -114,7 +114,7 @@ class CreateCommand(
                                     worldsManager.createWorld(worldName, seed, environment, type, generator)
                                     worldsManager.save()
                                     support.sendMessage(sender, Component.text("世界 $worldName 创建完成"))
-                                    1
+                                    return@executes 1
                                 }
                             )
                         )

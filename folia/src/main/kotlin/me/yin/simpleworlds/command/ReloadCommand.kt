@@ -20,7 +20,7 @@ class ReloadCommand(
                 support.sendMessage(sender, Component.text("正在重新加载…"))
                 worldsManager.load()
                 support.sendMessage(sender, Component.text("重新加载完成"))
-                1
+                return@executes 1
             }
     }
 }

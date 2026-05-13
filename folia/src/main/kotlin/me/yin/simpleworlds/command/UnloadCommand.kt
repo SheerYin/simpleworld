@@ -37,7 +37,7 @@ class UnloadCommand(
                     worldsManager.unloadWorld(worldName)
                     worldsManager.save()
                     support.sendMessage(sender, Component.text("世界 $worldName 卸载完成"))
-                    1
+                    return@executes 1
                 }
             )
     }

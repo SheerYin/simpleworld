@@ -22,18 +22,18 @@ class ListCommand(
             .requires { support.hasPermission(it, "simpleworlds.command.list") }
             .executes { context ->
                 handle(context.source.sender)
-                1
+                return@executes 1
             }
             .then(Commands.argument("page", IntegerArgumentType.integer(1))
                 .executes { context ->
                     handle(context.source.sender, IntegerArgumentType.getInteger(context, "page"))
-                    1
+                    return@executes 1
                 }
             )
     }
 
     private fun handle(sender: CommandSender, page: Int = 1, pageSize: Int = 10) {
-        val worldStates = worldsManager.v2
+        val worldStates = worldsManager.sortedWorlds
         val count = worldStates.size
         if (count == 0) {
             support.sendMessage(sender, Component.text("没有世界"))

@@ -10,7 +10,7 @@ class WorldGameRuleChange(val worldsManager: WorldsManager) : Listener {
     @EventHandler
     fun onWorldGameRuleChange(event: WorldGameRuleChangeEvent) {
         val world = event.world
-        val worldState = worldsManager.map1[world.name] ?: return
+        val worldState = worldsManager.worldByName[world.name] ?: return
 
         val key = event.gameRule.key.asString()
         val value = event.value
