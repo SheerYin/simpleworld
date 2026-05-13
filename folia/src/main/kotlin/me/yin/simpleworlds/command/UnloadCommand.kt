@@ -17,7 +17,7 @@ class UnloadCommand(
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("unload")
-            .requires { support.hasPermission(it, "simpleworlds.command.unload") }
+            .requires { support.hasPermission(it, PERMISSION) }
             .then(Commands.argument("name", StringArgumentType.word())
                 .suggests { _, builder ->
                     val remaining = builder.remainingLowerCase
@@ -40,5 +40,9 @@ class UnloadCommand(
                     return@executes 1
                 }
             )
+    }
+
+    companion object {
+        const val PERMISSION = "simpleworlds.command.unload"
     }
 }

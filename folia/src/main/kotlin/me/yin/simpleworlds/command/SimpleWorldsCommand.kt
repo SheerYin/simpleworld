@@ -11,15 +11,11 @@ class SimpleWorldsCommand(
     private val worldsManager: WorldsManager
 ) {
 
-    private val rootName = "simpleworlds"
-    private val rootPermission = "simpleworlds.command"
-    private val rootAliases = listOf("sw")
-
     fun register() {
         plugin.lifecycleManager.registerEventHandler(LifecycleEvents.COMMANDS) { event ->
             val support = CommandSupport(plugin)
-            val rootCommand = Commands.literal(rootName)
-                .requires { support.hasPermission(it, rootPermission) }
+            val rootCommand = Commands.literal(MAIN_COMMAND)
+                .requires { support.hasPermission(it, PERMISSION) }
                 // Folia 不支持运行时 createWorld / unloadWorld，相关命令暂不注册
                 // .then(CreateCommand(support, worldsManager).root())
                 // .then(LoadCommand(support, worldsManager).root())
@@ -30,7 +26,13 @@ class SimpleWorldsCommand(
                 .then(TeleportLocationCommand(support, worldsManager).root())
                 .then(ListCommand(support, worldsManager).root())
                 .build()
-            event.registrar().register(rootCommand, "SimpleWorlds commands", rootAliases)
+            event.registrar().register(rootCommand, "SimpleWorlds commands", COMMAND_ALIASES)
         }
+    }
+
+    companion object {
+        const val MAIN_COMMAND = "simpleworlds"
+        const val PERMISSION = "simpleworlds.command"
+        val COMMAND_ALIASES = listOf("sw")
     }
 }

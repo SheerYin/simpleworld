@@ -17,16 +17,13 @@ class TeleportCommand(
     private val worldsManager: WorldsManager
 ) {
 
-    private val permission = "simpleworlds.command.teleport"
-    private val permissionTarget = "simpleworlds.command.teleport.target"
-
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("teleport")
-            .requires { support.hasPermission(it, permission) }
+            .requires { support.hasPermission(it, PERMISSION) }
             .then(worldArgument()
                 .executes { context -> teleportSelf(context) }
                 .then(support.playerTargetArgument()
-                    .requires { support.hasPermission(it, permissionTarget) }
+                    .requires { support.hasPermission(it, PERMISSION_TARGET) }
                     .executes { context -> teleportTarget(context) }
                 )
             )
@@ -79,5 +76,10 @@ class TeleportCommand(
                 }
                 builder.buildFuture()
             }
+    }
+
+    companion object {
+        const val PERMISSION = "simpleworlds.command.teleport"
+        const val PERMISSION_TARGET = "simpleworlds.command.teleport.target"
     }
 }

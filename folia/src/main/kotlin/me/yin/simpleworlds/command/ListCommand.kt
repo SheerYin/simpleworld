@@ -19,7 +19,7 @@ class ListCommand(
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("list")
-            .requires { support.hasPermission(it, "simpleworlds.command.list") }
+            .requires { support.hasPermission(it, PERMISSION) }
             .executes { context ->
                 handle(context.source.sender)
                 return@executes 1
@@ -86,5 +86,9 @@ class ListCommand(
             .append(Component.text(" [$page/$totalPages] "))
             .append(nextBtn)
         support.sendMessage(sender, footer)
+    }
+
+    companion object {
+        const val PERMISSION = "simpleworlds.command.list"
     }
 }
