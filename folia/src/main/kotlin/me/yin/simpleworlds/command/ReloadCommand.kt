@@ -17,9 +17,9 @@ class ReloadCommand(
             .requires { support.hasPermission(it, PERMISSION) }
             .executes { context ->
                 val sender = context.source.sender
-                support.sendMessage(sender, Component.text("正在重新加载…"))
+                sender.sendMessage(support.prefixMessage().append(Component.text("正在重新加载…")))
                 worldsStore.load()
-                support.sendMessage(sender, Component.text("重新加载完成"))
+                sender.sendMessage(support.prefixMessage().append(Component.text("重新加载完成")))
                 return@executes 1
             }
     }

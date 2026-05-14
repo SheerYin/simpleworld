@@ -7,6 +7,7 @@ import com.mojang.brigadier.context.CommandContext
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import me.yin.simpleworlds.command.support.CommandSupport
+import net.kyori.adventure.text.Component
 import org.bukkit.Location
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
@@ -48,7 +49,7 @@ class TeleportCommand(
     private fun resolveSpawn(sender: CommandSender, worldName: String): Location? {
         val world = support.plugin.server.getWorld(worldName)
         if (world == null) {
-            sender.sendMessage(support.message("世界 $worldName 不存在"))
+            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 不存在")))
             return null
         }
         return world.spawnLocation

@@ -18,9 +18,14 @@ class SaveCommand(
             .requires { support.hasPermission(it, PERMISSION) }
             .executes { context ->
                 val sender = context.source.sender
-                support.sendMessage(sender, Component.text("正在保存…"))
-                runBlocking { worldsStore.save() }
-                support.sendMessage(sender, Component.text("保存完成"))
+                sender.sendMessage(support.prefixMessage().append(Component.text("正在保存…")))
+                try {
+                    runBlocking { worldsStore.save() }
+                    sender.sendMessage(support.prefixMessage().append(Component.text("保存完成")))
+                } catch (e: Throwable) {
+                    support.logger.error("保存失败", e)
+                    sender.sendMessage(support.prefixMessage().append(Component.text("保存失败：${e.message}")))
+                }
                 return@executes 1
             }
     }

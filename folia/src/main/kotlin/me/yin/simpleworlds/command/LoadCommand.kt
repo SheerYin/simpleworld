@@ -43,7 +43,7 @@ class LoadCommand(
                                     .forEach { builder.suggest(it) }
                             }
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            support.logger.warn("列出世界目录失败", e)
                         }
                         builder.build()
                     }
@@ -53,10 +53,15 @@ class LoadCommand(
                     val worldName = StringArgumentType.getString(context, "name")
                     if (!precheck(sender, worldName)) return@executes 0
 
-                    support.sendMessage(sender, Component.text("世界 $worldName 加载中…"))
+                    sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载中…")))
                     worldsService.loadWorld(worldName)
-                    runBlocking { worldsStore.save() }
-                    support.sendMessage(sender, Component.text("世界 $worldName 加载完成"))
+                    try {
+                        runBlocking { worldsStore.save() }
+                        sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载完成")))
+                    } catch (e: Throwable) {
+                        support.logger.error("保存失败", e)
+                        sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载完成（保存配置失败：${e.message}）")))
+                    }
                     return@executes 1
                 }
                 .then(Commands.argument("chunk_generator", StringArgumentType.string())
@@ -66,10 +71,15 @@ class LoadCommand(
                         if (!precheck(sender, worldName)) return@executes 0
                         val generator = StringArgumentType.getString(context, "chunk_generator")
 
-                        support.sendMessage(sender, Component.text("世界 $worldName 加载中…"))
+                        sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载中…")))
                         worldsService.loadWorld(worldName, generator)
-                        runBlocking { worldsStore.save() }
-                        support.sendMessage(sender, Component.text("世界 $worldName 加载完成"))
+                        try {
+                            runBlocking { worldsStore.save() }
+                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载完成")))
+                        } catch (e: Throwable) {
+                            support.logger.error("保存失败", e)
+                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载完成（保存配置失败：${e.message}）")))
+                        }
                         return@executes 1
                     }
                 )
@@ -78,12 +88,12 @@ class LoadCommand(
 
     private fun precheck(sender: CommandSender, worldName: String): Boolean {
         if (server.getWorld(worldName) != null) {
-            support.sendMessage(sender, Component.text("世界 $worldName 已经加载"))
+            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 已经加载")))
             return false
         }
         val path = server.worldContainer.toPath().resolve(worldName).resolve("level.dat")
         if (Files.notExists(path)) {
-            support.sendMessage(sender, Component.text("$worldName 不是世界，无法加载"))
+            sender.sendMessage(support.prefixMessage().append(Component.text("$worldName 不是世界，无法加载")))
             return false
         }
         return true

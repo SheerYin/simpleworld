@@ -1,13 +1,13 @@
 package me.yin.simpleworlds.world
 
-import me.yin.simpleworlds.SimpleWorlds
 import me.yin.simpleworlds.model.WorldConfig
 import org.bukkit.World
 import org.bukkit.WorldCreator
 import org.bukkit.WorldType
+import org.bukkit.plugin.java.JavaPlugin
 
 class WorldsService(
-    private val simpleWorlds: SimpleWorlds,
+    private val plugin: JavaPlugin,
     private val worldsStore: WorldsStore,
 ) {
 
@@ -49,7 +49,7 @@ class WorldsService(
     }
 
     fun unloadWorld(name: String): Boolean {
-        val success = simpleWorlds.server.unloadWorld(name, true)
+        val success = plugin.server.unloadWorld(name, true)
         if (success) {
             worldsStore.worldByName.remove(name)
         }

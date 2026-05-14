@@ -6,16 +6,19 @@ import me.yin.simpleworlds.command.support.CommandSupport
 import me.yin.simpleworlds.world.WorldsService
 import me.yin.simpleworlds.world.WorldsStore
 import org.bukkit.plugin.java.JavaPlugin
+import org.slf4j.Logger
 
 class SimpleWorldsCommand(
     private val plugin: JavaPlugin,
+    private val logger: Logger,
+    private val prefix: String,
     private val worldsStore: WorldsStore,
     private val worldsService: WorldsService,
 ) {
 
     fun register() {
         plugin.lifecycleManager.registerEventHandler(LifecycleEvents.COMMANDS) { event ->
-            val support = CommandSupport(plugin)
+            val support = CommandSupport(plugin, logger, prefix)
             val rootCommand = Commands.literal(MAIN_COMMAND)
                 .requires { support.hasPermission(it, PERMISSION) }
                 // Folia 不支持运行时 createWorld / unloadWorld，相关命令暂不注册

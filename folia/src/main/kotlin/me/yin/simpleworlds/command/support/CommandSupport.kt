@@ -4,18 +4,16 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
-import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
+import org.slf4j.Logger
 
-class CommandSupport(val plugin: JavaPlugin) {
+class CommandSupport(val plugin: JavaPlugin, val logger: Logger, private val prefix: String) {
 
-    private val messagePrefix = "[简单世界] "
-
-    fun message(text: String): Component {
-        return Component.text(messagePrefix + text)
+    fun prefixMessage(): Component {
+        return Component.text("[$prefix] ")
     }
 
     fun hasPermission(source: CommandSourceStack, permission: String): Boolean {
@@ -23,13 +21,9 @@ class CommandSupport(val plugin: JavaPlugin) {
         return sender !is Player || sender.hasPermission(permission)
     }
 
-    fun sendMessage(audience: Audience, component: Component) {
-        audience.sendMessage(component)
-    }
-
     fun requirePlayer(sender: CommandSender): Player? {
         if (sender !is Player) {
-            sender.sendMessage(message("此命令仅限玩家执行"))
+            sender.sendMessage(prefixMessage().append(Component.text("此命令仅限玩家执行")))
             return null
         }
         return sender
@@ -38,7 +32,7 @@ class CommandSupport(val plugin: JavaPlugin) {
     fun resolveTarget(sender: CommandSender, name: String): Player? {
         val target = plugin.server.getPlayerExact(name)
         if (target == null) {
-            sender.sendMessage(message("玩家 $name 不在线"))
+            sender.sendMessage(prefixMessage().append(Component.text("玩家 $name 不在线")))
         }
         return target
     }

@@ -36,18 +36,17 @@ class ListCommand(
         val configs = worldsStore.worldByName.values.sortedBy { it.name }
         val count = configs.size
         if (count == 0) {
-            support.sendMessage(sender, Component.text("没有世界"))
+            sender.sendMessage(support.prefixMessage().append(Component.text("没有世界")))
             return
         }
 
         val totalPages = ((count + pageSize - 1) / pageSize).coerceAtLeast(1)
         if (page !in 1..totalPages) {
-            support.sendMessage(sender, Component.text("页码 $page 错误！请输入 1 到 $totalPages 页码"))
+            sender.sendMessage(support.prefixMessage().append(Component.text("页码 $page 错误！请输入 1 到 $totalPages 页码")))
             return
         }
 
-        support.sendMessage(
-            sender,
+        sender.sendMessage(
             Component.text("所有世界 ").append(Component.text("（共 $count 个）", NamedTextColor.GRAY))
         )
 
@@ -71,7 +70,7 @@ class ListCommand(
                 .hoverEvent(HoverEvent.showText(Component.text("点击传送", NamedTextColor.GRAY)))
                 .clickEvent(ClickEvent.runCommand("/simpleworlds teleport $name"))
 
-            support.sendMessage(sender, worldPart.append(teleportPart))
+            sender.sendMessage(worldPart.append(teleportPart))
         }
 
         val previousPage = (page - 1).coerceAtLeast(1)
@@ -87,7 +86,7 @@ class ListCommand(
         val footer = previousBtn
             .append(Component.text(" [$page/$totalPages] "))
             .append(nextBtn)
-        support.sendMessage(sender, footer)
+        sender.sendMessage(footer)
     }
 
     companion object {

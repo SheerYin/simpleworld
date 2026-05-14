@@ -36,10 +36,15 @@ class UnloadCommand(
                     val sender = context.source.sender
                     val worldName = StringArgumentType.getString(context, "name")
 
-                    support.sendMessage(sender, Component.text("世界 $worldName 卸载中…"))
+                    sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载中…")))
                     worldsService.unloadWorld(worldName)
-                    runBlocking { worldsStore.save() }
-                    support.sendMessage(sender, Component.text("世界 $worldName 卸载完成"))
+                    try {
+                        runBlocking { worldsStore.save() }
+                        sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载完成")))
+                    } catch (e: Throwable) {
+                        support.logger.error("保存失败", e)
+                        sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载完成（保存配置失败：${e.message}）")))
+                    }
                     return@executes 1
                 }
             )

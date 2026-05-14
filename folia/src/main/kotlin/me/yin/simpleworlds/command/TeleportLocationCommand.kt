@@ -7,6 +7,7 @@ import com.mojang.brigadier.context.CommandContext
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import me.yin.simpleworlds.command.support.CommandSupport
+import net.kyori.adventure.text.Component
 import org.bukkit.Location
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
@@ -49,20 +50,20 @@ class TeleportLocationCommand(
         val parts = locationText.split(",").map { it.trim() }
         val size = parts.size
         if (size != 4 && size != 6) {
-            sender.sendMessage(support.message("坐标 $locationText 格式错误"))
+            sender.sendMessage(support.prefixMessage().append(Component.text("坐标 $locationText 格式错误")))
             return null
         }
 
         val world = support.plugin.server.getWorld(parts[0])
         if (world == null) {
-            sender.sendMessage(support.message("世界 ${parts[0]} 不存在"))
+            sender.sendMessage(support.prefixMessage().append(Component.text("世界 ${parts[0]} 不存在")))
             return null
         }
         val x = parts[1].toDoubleOrNull()
         val y = parts[2].toDoubleOrNull()
         val z = parts[3].toDoubleOrNull()
         if (x == null || y == null || z == null) {
-            sender.sendMessage(support.message("坐标解析错误"))
+            sender.sendMessage(support.prefixMessage().append(Component.text("坐标解析错误")))
             return null
         }
         if (size == 4) {

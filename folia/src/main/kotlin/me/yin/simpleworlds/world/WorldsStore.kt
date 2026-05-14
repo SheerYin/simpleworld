@@ -9,7 +9,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
-import me.yin.simpleworlds.SimpleWorlds
 import me.yin.simpleworlds.model.WorldConfig
 import me.yin.simpleworlds.model.WorldSection
 import org.bukkit.Difficulty
@@ -18,22 +17,25 @@ import org.bukkit.Location
 import org.bukkit.NamespacedKey
 import org.bukkit.Registry
 import org.bukkit.World
+import org.bukkit.plugin.java.JavaPlugin
+import org.slf4j.Logger
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.path.exists
 
 class WorldsStore(
-    val simpleWorlds: SimpleWorlds,
+    val plugin: JavaPlugin,
+    private val logger: Logger,
     private val json: Json,
     private val scope: CoroutineScope,
 ) {
 
-    val server = simpleWorlds.server
+    val server = plugin.server
 
     val worldByName = ConcurrentHashMap<String, WorldConfig>()
 
-    private val path: Path = simpleWorlds.dataPath.resolve("worlds.json")
+    private val path: Path = plugin.dataPath.resolve("worlds.json")
 
     private val saveMutex = Mutex()
     private var timerJob: Job? = null
@@ -44,7 +46,11 @@ class WorldsStore(
         timerJob = scope.launch {
             while (isActive) {
                 delay(saveIntervalMillis)
-                save()
+                try {
+                    save()
+                } catch (e: Throwable) {
+                    logger.error("保存失败", e)
+                }
             }
         }
     }
@@ -56,11 +62,7 @@ class WorldsStore(
 
     suspend fun save() {
         saveMutex.withLock {
-            try {
-                writeWorldsFile()
-            } catch (e: Throwable) {
-                simpleWorlds.slF4JLogger.error("保存失败", e)
-            }
+            writeWorldsFile()
         }
     }
 

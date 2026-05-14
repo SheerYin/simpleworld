@@ -14,34 +14,44 @@ import org.bukkit.plugin.java.JavaPlugin
 class SimpleWorlds : JavaPlugin() {
 
     private var worldsStore: WorldsStore? = null
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    val json: Json = Json {
-        prettyPrint = true
-        encodeDefaults = true
-        ignoreUnknownKeys = true
-    }
+    private var scope: CoroutineScope? = null
 
     override fun onEnable() {
-        val worldsStore = WorldsStore(this, json, scope)
+        val logger = slF4JLogger
+        val prefix = pluginMeta.loggerPrefix ?: pluginMeta.name
+        val json = Json {
+            prettyPrint = true
+            encodeDefaults = true
+            ignoreUnknownKeys = true
+        }
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        this.scope = scope
+
+        val worldsStore = WorldsStore(this, logger, json, scope)
         val worldsService = WorldsService(this, worldsStore)
         this.worldsStore = worldsStore
 
         worldsStore.load()
         worldsStore.start()
 
-        SimpleWorldsCommand(this, worldsStore, worldsService).register()
+        SimpleWorldsCommand(this, logger, prefix, worldsStore, worldsService).register()
 
-        slF4JLogger.info("Enabled ${pluginMeta.name} ${pluginMeta.version}")
+        logger.info("Enabled $prefix ${pluginMeta.version}")
     }
 
     override fun onDisable() {
-        slF4JLogger.info("Disabled ${pluginMeta.name} ${pluginMeta.version}")
+        val prefix = pluginMeta.loggerPrefix ?: pluginMeta.name
+        slF4JLogger.info("Disabled $prefix ${pluginMeta.version}")
         val worldsStore = this.worldsStore
         if (worldsStore != null) {
-            runBlocking { worldsStore.shutdown() }
+            try {
+                runBlocking { worldsStore.shutdown() }
+            } catch (e: Throwable) {
+                slF4JLogger.error("保存失败", e)
+            }
         }
         this.worldsStore = null
-        scope.cancel()
+        scope?.cancel()
+        scope = null
     }
 }
