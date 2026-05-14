@@ -23,6 +23,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.path.exists
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 class WorldsStore(
     val plugin: JavaPlugin,
@@ -40,12 +42,10 @@ class WorldsStore(
     private val saveMutex = Mutex()
     private var timerJob: Job? = null
 
-    private val saveIntervalMillis: Long = 30_000
-
     fun start() {
         timerJob = scope.launch {
             while (isActive) {
-                delay(saveIntervalMillis)
+                delay(SAVE_INTERVAL)
                 try {
                     save()
                 } catch (e: Throwable) {
@@ -153,5 +153,9 @@ class WorldsStore(
                 world.setGameRule(gameRule as GameRule<Boolean>, value.toBoolean())
             }
         }
+    }
+
+    companion object {
+        val SAVE_INTERVAL: Duration = 1.minutes
     }
 }

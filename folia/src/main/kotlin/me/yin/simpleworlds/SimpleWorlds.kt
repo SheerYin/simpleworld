@@ -13,8 +13,9 @@ import org.bukkit.plugin.java.JavaPlugin
 
 class SimpleWorlds : JavaPlugin() {
 
-    private var worldsStore: WorldsStore? = null
-    private var scope: CoroutineScope? = null
+    var worldsStore: WorldsStore? = null
+    var worldsService: WorldsService? = null
+    var scope: CoroutineScope? = null
 
     override fun onEnable() {
         val logger = slF4JLogger
@@ -30,6 +31,7 @@ class SimpleWorlds : JavaPlugin() {
         val worldsStore = WorldsStore(this, logger, json, scope)
         val worldsService = WorldsService(this, worldsStore)
         this.worldsStore = worldsStore
+        this.worldsService = worldsService
 
         worldsStore.load()
         worldsStore.start()
@@ -51,6 +53,7 @@ class SimpleWorlds : JavaPlugin() {
             }
         }
         this.worldsStore = null
+        this.worldsService = null
         scope?.cancel()
         scope = null
     }
