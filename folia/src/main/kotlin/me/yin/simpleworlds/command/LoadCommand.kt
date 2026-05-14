@@ -4,8 +4,10 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
+import kotlinx.coroutines.runBlocking
 import me.yin.simpleworlds.command.support.CommandSupport
-import me.yin.simpleworlds.world.WorldsManager
+import me.yin.simpleworlds.world.WorldsService
+import me.yin.simpleworlds.world.WorldsStore
 import net.kyori.adventure.text.Component
 import org.bukkit.command.CommandSender
 import java.nio.file.Files
@@ -14,7 +16,8 @@ import kotlin.io.path.name
 
 class LoadCommand(
     private val support: CommandSupport,
-    private val worldsManager: WorldsManager
+    private val worldsStore: WorldsStore,
+    private val worldsService: WorldsService,
 ) {
 
     private val server = support.plugin.server
@@ -51,8 +54,8 @@ class LoadCommand(
                     if (!precheck(sender, worldName)) return@executes 0
 
                     support.sendMessage(sender, Component.text("世界 $worldName 加载中…"))
-                    worldsManager.loadWorld(worldName)
-                    worldsManager.save()
+                    worldsService.loadWorld(worldName)
+                    runBlocking { worldsStore.save() }
                     support.sendMessage(sender, Component.text("世界 $worldName 加载完成"))
                     return@executes 1
                 }
@@ -64,8 +67,8 @@ class LoadCommand(
                         val generator = StringArgumentType.getString(context, "chunk_generator")
 
                         support.sendMessage(sender, Component.text("世界 $worldName 加载中…"))
-                        worldsManager.loadWorld(worldName, generator)
-                        worldsManager.save()
+                        worldsService.loadWorld(worldName, generator)
+                        runBlocking { worldsStore.save() }
                         support.sendMessage(sender, Component.text("世界 $worldName 加载完成"))
                         return@executes 1
                     }

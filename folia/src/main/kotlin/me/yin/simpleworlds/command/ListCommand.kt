@@ -5,7 +5,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import me.yin.simpleworlds.command.support.CommandSupport
-import me.yin.simpleworlds.world.WorldsManager
+import me.yin.simpleworlds.world.WorldsStore
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.event.ClickEvent
 import net.kyori.adventure.text.event.HoverEvent
@@ -14,7 +14,7 @@ import org.bukkit.command.CommandSender
 
 class ListCommand(
     private val support: CommandSupport,
-    private val worldsManager: WorldsManager
+    private val worldsStore: WorldsStore,
 ) {
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
@@ -33,8 +33,8 @@ class ListCommand(
     }
 
     private fun handle(sender: CommandSender, page: Int = 1, pageSize: Int = 10) {
-        val worldStates = worldsManager.sortedWorlds
-        val count = worldStates.size
+        val configs = worldsStore.worldByName.values.sortedBy { it.name }
+        val count = configs.size
         if (count == 0) {
             support.sendMessage(sender, Component.text("没有世界"))
             return
@@ -51,14 +51,16 @@ class ListCommand(
             Component.text("所有世界 ").append(Component.text("（共 $count 个）", NamedTextColor.GRAY))
         )
 
+        val server = worldsStore.server
         val start = (page - 1) * pageSize
         val end = (start + pageSize).coerceAtMost(count)
-        worldStates.subList(start, end).forEach { worldState ->
-            val name = worldState.name
-            val world = worldState.world
+        configs.subList(start, end).forEach { config ->
+            val name = config.name
+            val world = server.getWorld(name) ?: return@forEach
             val seed = world.seed
-            val type = worldState.type ?: "Default | Unknown"
-            val generator = worldState.chunkGenerator ?: "Default | Unknown"
+            @Suppress("DEPRECATION")
+            val type = world.worldType?.name ?: "Default | Unknown"
+            val generator = config.chunkGenerator ?: "Default | Unknown"
             val difficulty = world.difficulty.name
             val environment = world.environment.name
 

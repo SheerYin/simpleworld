@@ -8,6 +8,7 @@ import java.nio.file.StandardOpenOption
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.shadow)
     alias(libs.plugins.paperweight.userdev)
     alias(libs.plugins.resource.factory.paper)
@@ -28,6 +29,9 @@ repositories {
 
 dependencies {
     paperweight.foliaDevBundle("26.1.2.build.+")
+
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.core)
 }
 
 val minecraftPluginName = "SimpleWorlds"

@@ -7,14 +7,12 @@ import com.mojang.brigadier.context.CommandContext
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import me.yin.simpleworlds.command.support.CommandSupport
-import me.yin.simpleworlds.world.WorldsManager
 import org.bukkit.Location
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 
 class TeleportLocationCommand(
     private val support: CommandSupport,
-    private val worldsManager: WorldsManager
 ) {
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {

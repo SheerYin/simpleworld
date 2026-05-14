@@ -4,8 +4,10 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
+import kotlinx.coroutines.runBlocking
 import me.yin.simpleworlds.command.support.CommandSupport
-import me.yin.simpleworlds.world.WorldsManager
+import me.yin.simpleworlds.world.WorldsService
+import me.yin.simpleworlds.world.WorldsStore
 import net.kyori.adventure.text.Component
 import org.bukkit.World
 import org.bukkit.WorldType
@@ -14,7 +16,8 @@ import java.nio.file.Files
 
 class CreateCommand(
     private val support: CommandSupport,
-    private val worldsManager: WorldsManager
+    private val worldsStore: WorldsStore,
+    private val worldsService: WorldsService,
 ) {
 
     private val server = support.plugin.server
@@ -29,8 +32,8 @@ class CreateCommand(
                     if (!precheck(sender, worldName)) return@executes 0
 
                     support.sendMessage(sender, Component.text("世界 $worldName 创建中…"))
-                    worldsManager.createWorld(worldName)
-                    worldsManager.save()
+                    worldsService.createWorld(worldName)
+                    runBlocking { worldsStore.save() }
                     support.sendMessage(sender, Component.text("世界 $worldName 创建完成"))
                     return@executes 1
                 }
@@ -46,8 +49,8 @@ class CreateCommand(
                         val seed = StringArgumentType.getString(context, "seed").toLongOrNull()
 
                         support.sendMessage(sender, Component.text("世界 $worldName 创建中…"))
-                        worldsManager.createWorld(worldName, seed)
-                        worldsManager.save()
+                        worldsService.createWorld(worldName, seed)
+                        runBlocking { worldsStore.save() }
                         support.sendMessage(sender, Component.text("世界 $worldName 创建完成"))
                         return@executes 1
                     }
@@ -70,8 +73,8 @@ class CreateCommand(
                             val environment = World.Environment.valueOf(StringArgumentType.getString(context, "environment"))
 
                             support.sendMessage(sender, Component.text("世界 $worldName 创建中…"))
-                            worldsManager.createWorld(worldName, seed, environment)
-                            worldsManager.save()
+                            worldsService.createWorld(worldName, seed, environment)
+                            runBlocking { worldsStore.save() }
                             support.sendMessage(sender, Component.text("世界 $worldName 创建完成"))
                             return@executes 1
                         }
@@ -95,8 +98,8 @@ class CreateCommand(
                                 val type = WorldType.valueOf(StringArgumentType.getString(context, "type"))
 
                                 support.sendMessage(sender, Component.text("世界 $worldName 创建中…"))
-                                worldsManager.createWorld(worldName, seed, environment, type)
-                                worldsManager.save()
+                                worldsService.createWorld(worldName, seed, environment, type)
+                                runBlocking { worldsStore.save() }
                                 support.sendMessage(sender, Component.text("世界 $worldName 创建完成"))
                                 return@executes 1
                             }
@@ -111,8 +114,8 @@ class CreateCommand(
                                     val generator = StringArgumentType.getString(context, "chunk_generator")
 
                                     support.sendMessage(sender, Component.text("世界 $worldName 创建中…"))
-                                    worldsManager.createWorld(worldName, seed, environment, type, generator)
-                                    worldsManager.save()
+                                    worldsService.createWorld(worldName, seed, environment, type, generator)
+                                    runBlocking { worldsStore.save() }
                                     support.sendMessage(sender, Component.text("世界 $worldName 创建完成"))
                                     return@executes 1
                                 }

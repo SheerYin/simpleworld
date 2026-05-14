@@ -7,14 +7,12 @@ import com.mojang.brigadier.context.CommandContext
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import me.yin.simpleworlds.command.support.CommandSupport
-import me.yin.simpleworlds.world.WorldsManager
 import org.bukkit.Location
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 
 class TeleportCommand(
     private val support: CommandSupport,
-    private val worldsManager: WorldsManager
 ) {
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
@@ -48,7 +46,7 @@ class TeleportCommand(
     }
 
     private fun resolveSpawn(sender: CommandSender, worldName: String): Location? {
-        val world = worldsManager.worldByName[worldName]?.world ?: support.plugin.server.getWorld(worldName)
+        val world = support.plugin.server.getWorld(worldName)
         if (world == null) {
             sender.sendMessage(support.message("世界 $worldName 不存在"))
             return null

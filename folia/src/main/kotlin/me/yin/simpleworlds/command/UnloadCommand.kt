@@ -4,13 +4,16 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
+import kotlinx.coroutines.runBlocking
 import me.yin.simpleworlds.command.support.CommandSupport
-import me.yin.simpleworlds.world.WorldsManager
+import me.yin.simpleworlds.world.WorldsService
+import me.yin.simpleworlds.world.WorldsStore
 import net.kyori.adventure.text.Component
 
 class UnloadCommand(
     private val support: CommandSupport,
-    private val worldsManager: WorldsManager
+    private val worldsStore: WorldsStore,
+    private val worldsService: WorldsService,
 ) {
 
     private val server = support.plugin.server
@@ -34,8 +37,8 @@ class UnloadCommand(
                     val worldName = StringArgumentType.getString(context, "name")
 
                     support.sendMessage(sender, Component.text("世界 $worldName 卸载中…"))
-                    worldsManager.unloadWorld(worldName)
-                    worldsManager.save()
+                    worldsService.unloadWorld(worldName)
+                    runBlocking { worldsStore.save() }
                     support.sendMessage(sender, Component.text("世界 $worldName 卸载完成"))
                     return@executes 1
                 }
