@@ -25,18 +25,18 @@ class SimpleWorlds : JavaPlugin() {
             encodeDefaults = true
             ignoreUnknownKeys = true
         }
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        this.scope = scope
 
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val worldsStore = WorldsStore(this, logger, json, scope)
         val worldsService = WorldsService(this, worldsStore)
+        this.scope = scope
         this.worldsStore = worldsStore
         this.worldsService = worldsService
 
-        worldsStore.load()
-        worldsStore.start()
+        runBlocking { worldsStore.load() }
+        worldsStore.startAutoSave()
 
-        SimpleWorldsCommand(this, logger, prefix, worldsStore, worldsService).register()
+        SimpleWorldsCommand(this, logger, prefix, scope, worldsStore, worldsService).register()
 
         logger.info("Enabled $prefix ${pluginMeta.version}")
     }
@@ -44,17 +44,14 @@ class SimpleWorlds : JavaPlugin() {
     override fun onDisable() {
         val prefix = pluginMeta.loggerPrefix ?: pluginMeta.name
         slF4JLogger.info("Disabled $prefix ${pluginMeta.version}")
-        val worldsStore = this.worldsStore
-        if (worldsStore != null) {
-            try {
-                runBlocking { worldsStore.shutdown() }
-            } catch (e: Throwable) {
-                slF4JLogger.error("保存失败", e)
-            }
+        try {
+            runBlocking { worldsStore?.shutdown() }
+        } catch (e: Throwable) {
+            slF4JLogger.error("关闭失败", e)
         }
+        scope?.cancel()
+        this.scope = null
         this.worldsStore = null
         this.worldsService = null
-        scope?.cancel()
-        scope = null
     }
 }

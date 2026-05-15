@@ -20,7 +20,7 @@ class CreateCommand(
     private val worldsService: WorldsService,
 ) {
 
-    private val server = support.plugin.server
+    private val plugin = support.plugin
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("create")
@@ -32,13 +32,15 @@ class CreateCommand(
                     if (!precheck(sender, worldName)) return@executes 0
 
                     sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建中…")))
-                    worldsService.createWorld(worldName)
-                    try {
-                        runBlocking { worldsStore.save() }
-                        sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
-                    } catch (e: Throwable) {
-                        support.logger.error("保存失败", e)
-                        sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成（保存配置失败：${e.message}）")))
+                    plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                        try {
+                            worldsService.createWorld(worldName)
+                            runBlocking { worldsStore.save() }
+                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
+                        } catch (e: Throwable) {
+                            support.logger.error("创建失败", e)
+                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建失败：${e.message}")))
+                        }
                     }
                     return@executes 1
                 }
@@ -54,13 +56,15 @@ class CreateCommand(
                         val seed = StringArgumentType.getString(context, "seed").toLongOrNull()
 
                         sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建中…")))
-                        worldsService.createWorld(worldName, seed)
-                        try {
-                            runBlocking { worldsStore.save() }
-                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
-                        } catch (e: Throwable) {
-                            support.logger.error("保存失败", e)
-                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成（保存配置失败：${e.message}）")))
+                        plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                            try {
+                                worldsService.createWorld(worldName, seed)
+                                runBlocking { worldsStore.save() }
+                                sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
+                            } catch (e: Throwable) {
+                                support.logger.error("创建失败", e)
+                                sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建失败：${e.message}")))
+                            }
                         }
                         return@executes 1
                     }
@@ -83,13 +87,15 @@ class CreateCommand(
                             val environment = World.Environment.valueOf(StringArgumentType.getString(context, "environment"))
 
                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建中…")))
-                            worldsService.createWorld(worldName, seed, environment)
-                            try {
-                                runBlocking { worldsStore.save() }
-                                sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
-                            } catch (e: Throwable) {
-                                support.logger.error("保存失败", e)
-                                sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成（保存配置失败：${e.message}）")))
+                            plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                                try {
+                                    worldsService.createWorld(worldName, seed, environment)
+                                    runBlocking { worldsStore.save() }
+                                    sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
+                                } catch (e: Throwable) {
+                                    support.logger.error("创建失败", e)
+                                    sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建失败：${e.message}")))
+                                }
                             }
                             return@executes 1
                         }
@@ -113,13 +119,15 @@ class CreateCommand(
                                 val type = WorldType.valueOf(StringArgumentType.getString(context, "type"))
 
                                 sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建中…")))
-                                worldsService.createWorld(worldName, seed, environment, type)
-                                try {
-                                    runBlocking { worldsStore.save() }
-                                    sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
-                                } catch (e: Throwable) {
-                                    support.logger.error("保存失败", e)
-                                    sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成（保存配置失败：${e.message}）")))
+                                plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                                    try {
+                                        worldsService.createWorld(worldName, seed, environment, type)
+                                        runBlocking { worldsStore.save() }
+                                        sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
+                                    } catch (e: Throwable) {
+                                        support.logger.error("创建失败", e)
+                                        sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建失败：${e.message}")))
+                                    }
                                 }
                                 return@executes 1
                             }
@@ -134,13 +142,15 @@ class CreateCommand(
                                     val generator = StringArgumentType.getString(context, "chunk_generator")
 
                                     sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建中…")))
-                                    worldsService.createWorld(worldName, seed, environment, type, generator)
-                                    try {
-                                        runBlocking { worldsStore.save() }
-                                        sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
-                                    } catch (e: Throwable) {
-                                        support.logger.error("保存失败", e)
-                                        sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成（保存配置失败：${e.message}）")))
+                                    plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                                        try {
+                                            worldsService.createWorld(worldName, seed, environment, type, generator)
+                                            runBlocking { worldsStore.save() }
+                                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
+                                        } catch (e: Throwable) {
+                                            support.logger.error("创建失败", e)
+                                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建失败：${e.message}")))
+                                        }
                                     }
                                     return@executes 1
                                 }
@@ -152,11 +162,11 @@ class CreateCommand(
     }
 
     private fun precheck(sender: CommandSender, worldName: String): Boolean {
-        if (server.getWorld(worldName) != null) {
+        if (plugin.server.getWorld(worldName) != null) {
             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 已经加载")))
             return false
         }
-        val path = server.worldContainer.toPath().resolve(worldName).resolve("level.dat")
+        val path = plugin.server.worldContainer.toPath().resolve(worldName).resolve("level.dat")
         if (Files.exists(path)) {
             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 存在磁盘")))
             return false

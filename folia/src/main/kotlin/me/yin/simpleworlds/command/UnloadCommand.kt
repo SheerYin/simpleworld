@@ -16,7 +16,7 @@ class UnloadCommand(
     private val worldsService: WorldsService,
 ) {
 
-    private val server = support.plugin.server
+    private val plugin = support.plugin
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("unload")
@@ -24,7 +24,7 @@ class UnloadCommand(
             .then(Commands.argument("name", StringArgumentType.word())
                 .suggests { _, builder ->
                     val remaining = builder.remainingLowerCase
-                    for (world in server.worlds) {
+                    for (world in plugin.server.worlds) {
                         val name = world.name
                         if (remaining.isEmpty() || name.startsWith(remaining, true)) {
                             builder.suggest(name)
@@ -37,13 +37,15 @@ class UnloadCommand(
                     val worldName = StringArgumentType.getString(context, "name")
 
                     sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载中…")))
-                    worldsService.unloadWorld(worldName)
-                    try {
-                        runBlocking { worldsStore.save() }
-                        sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载完成")))
-                    } catch (e: Throwable) {
-                        support.logger.error("保存失败", e)
-                        sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载完成（保存配置失败：${e.message}）")))
+                    plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                        try {
+                            worldsService.unloadWorld(worldName)
+                            runBlocking { worldsStore.save() }
+                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载完成")))
+                        } catch (e: Throwable) {
+                            support.logger.error("卸载失败", e)
+                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载失败：${e.message}")))
+                        }
                     }
                     return@executes 1
                 }

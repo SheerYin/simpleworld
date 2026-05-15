@@ -2,6 +2,7 @@ package me.yin.simpleworlds.command
 
 import io.papermc.paper.command.brigadier.Commands
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents
+import kotlinx.coroutines.CoroutineScope
 import me.yin.simpleworlds.command.support.CommandSupport
 import me.yin.simpleworlds.world.WorldsService
 import me.yin.simpleworlds.world.WorldsStore
@@ -12,13 +13,14 @@ class SimpleWorldsCommand(
     private val plugin: JavaPlugin,
     private val logger: Logger,
     private val prefix: String,
+    private val scope: CoroutineScope,
     private val worldsStore: WorldsStore,
     private val worldsService: WorldsService,
 ) {
 
     fun register() {
         plugin.lifecycleManager.registerEventHandler(LifecycleEvents.COMMANDS) { event ->
-            val support = CommandSupport(plugin, logger, prefix)
+            val support = CommandSupport(plugin, logger, prefix, scope)
             val rootCommand = Commands.literal(MAIN_COMMAND)
                 .requires { support.hasPermission(it, PERMISSION) }
                 // Folia 不支持运行时 createWorld / unloadWorld，相关命令暂不注册

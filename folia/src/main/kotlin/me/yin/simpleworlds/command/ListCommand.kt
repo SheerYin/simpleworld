@@ -33,8 +33,8 @@ class ListCommand(
     }
 
     private fun handle(sender: CommandSender, page: Int = 1, pageSize: Int = 10) {
-        val configs = worldsStore.worldByName.values.sortedBy { it.name }
-        val count = configs.size
+        val worlds = support.plugin.server.worlds.sortedBy { it.name }
+        val count = worlds.size
         if (count == 0) {
             sender.sendMessage(support.prefixMessage().append(Component.text("没有世界")))
             return
@@ -50,16 +50,15 @@ class ListCommand(
             Component.text("所有世界 ").append(Component.text("（共 $count 个）", NamedTextColor.GRAY))
         )
 
-        val server = worldsStore.server
+        val generators = worldsStore.chunkGenerators
         val start = (page - 1) * pageSize
         val end = (start + pageSize).coerceAtMost(count)
-        configs.subList(start, end).forEach { config ->
-            val name = config.name
-            val world = server.getWorld(name) ?: return@forEach
+        worlds.subList(start, end).forEach { world ->
+            val name = world.name
             val seed = world.seed
             @Suppress("DEPRECATION")
             val type = world.worldType?.name ?: "Default | Unknown"
-            val generator = config.chunkGenerator ?: "Default | Unknown"
+            val generator = generators[name] ?: "Default | Unknown"
             val difficulty = world.difficulty.name
             val environment = world.environment.name
 

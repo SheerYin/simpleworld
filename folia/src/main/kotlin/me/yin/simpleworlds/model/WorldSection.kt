@@ -10,7 +10,7 @@ class WorldSection(
     val difficulty: String = "",
     val spawn: SpawnLocation? = null,
     val playerVersusPlayer: Boolean? = null,
-    val gameRule: HashMap<String, String> = hashMapOf(),
+    val gameRule: MutableMap<String, String> = mutableMapOf(),
 ) {
     @Serializable
     class SpawnLocation(

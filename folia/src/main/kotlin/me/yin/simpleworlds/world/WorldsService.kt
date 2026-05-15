@@ -1,6 +1,5 @@
 package me.yin.simpleworlds.world
 
-import me.yin.simpleworlds.model.WorldConfig
 import org.bukkit.World
 import org.bukkit.WorldCreator
 import org.bukkit.WorldType
@@ -30,8 +29,8 @@ class WorldsService(
             worldCreator.generator(chunkGenerator)
         }
         val world = worldCreator.createWorld()
-        if (world != null) {
-            worldsStore.worldByName[name] = WorldConfig(name, chunkGenerator)
+        if (world != null && chunkGenerator != null) {
+            worldsStore.chunkGenerators[name] = chunkGenerator
         }
         return world
     }
@@ -42,8 +41,8 @@ class WorldsService(
             worldCreator.generator(chunkGenerator)
         }
         val world = worldCreator.createWorld()
-        if (world != null) {
-            worldsStore.worldByName[name] = WorldConfig(name, chunkGenerator)
+        if (world != null && chunkGenerator != null) {
+            worldsStore.chunkGenerators[name] = chunkGenerator
         }
         return world
     }
@@ -51,8 +50,9 @@ class WorldsService(
     fun unloadWorld(name: String): Boolean {
         val success = plugin.server.unloadWorld(name, true)
         if (success) {
-            worldsStore.worldByName.remove(name)
+            worldsStore.chunkGenerators.remove(name)
         }
         return success
     }
+
 }

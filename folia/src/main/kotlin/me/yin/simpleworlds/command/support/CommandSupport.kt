@@ -4,13 +4,19 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
+import kotlinx.coroutines.CoroutineScope
 import net.kyori.adventure.text.Component
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
 import org.slf4j.Logger
 
-class CommandSupport(val plugin: JavaPlugin, val logger: Logger, private val prefix: String) {
+class CommandSupport(
+    val plugin: JavaPlugin,
+    val logger: Logger,
+    private val prefix: String,
+    val scope: CoroutineScope,
+) {
 
     fun prefixMessage(): Component {
         return Component.text("[$prefix] ")

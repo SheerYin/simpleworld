@@ -20,7 +20,7 @@ class LoadCommand(
     private val worldsService: WorldsService,
 ) {
 
-    private val server = support.plugin.server
+    private val plugin = support.plugin
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("load")
@@ -28,8 +28,8 @@ class LoadCommand(
             .then(Commands.argument("name", StringArgumentType.word())
                 .suggests { _, builder ->
                     val remaining = builder.remainingLowerCase
-                    val worldContainer = server.worldContainer.toPath()
-                    val loaded = server.worlds.map { it.name }.toSet()
+                    val worldContainer = plugin.server.worldContainer.toPath()
+                    val loaded = plugin.server.worlds.map { it.name }.toSet()
 
                     CompletableFuture.supplyAsync {
                         try {
@@ -54,13 +54,15 @@ class LoadCommand(
                     if (!precheck(sender, worldName)) return@executes 0
 
                     sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载中…")))
-                    worldsService.loadWorld(worldName)
-                    try {
-                        runBlocking { worldsStore.save() }
-                        sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载完成")))
-                    } catch (e: Throwable) {
-                        support.logger.error("保存失败", e)
-                        sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载完成（保存配置失败：${e.message}）")))
+                    plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                        try {
+                            worldsService.loadWorld(worldName)
+                            runBlocking { worldsStore.save() }
+                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载完成")))
+                        } catch (e: Throwable) {
+                            support.logger.error("加载失败", e)
+                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载失败：${e.message}")))
+                        }
                     }
                     return@executes 1
                 }
@@ -72,13 +74,15 @@ class LoadCommand(
                         val generator = StringArgumentType.getString(context, "chunk_generator")
 
                         sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载中…")))
-                        worldsService.loadWorld(worldName, generator)
-                        try {
-                            runBlocking { worldsStore.save() }
-                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载完成")))
-                        } catch (e: Throwable) {
-                            support.logger.error("保存失败", e)
-                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载完成（保存配置失败：${e.message}）")))
+                        plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                            try {
+                                worldsService.loadWorld(worldName, generator)
+                                runBlocking { worldsStore.save() }
+                                sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载完成")))
+                            } catch (e: Throwable) {
+                                support.logger.error("加载失败", e)
+                                sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载失败：${e.message}")))
+                            }
                         }
                         return@executes 1
                     }
@@ -87,11 +91,11 @@ class LoadCommand(
     }
 
     private fun precheck(sender: CommandSender, worldName: String): Boolean {
-        if (server.getWorld(worldName) != null) {
+        if (plugin.server.getWorld(worldName) != null) {
             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 已经加载")))
             return false
         }
-        val path = server.worldContainer.toPath().resolve(worldName).resolve("level.dat")
+        val path = plugin.server.worldContainer.toPath().resolve(worldName).resolve("level.dat")
         if (Files.notExists(path)) {
             sender.sendMessage(support.prefixMessage().append(Component.text("$worldName 不是世界，无法加载")))
             return false
