@@ -166,6 +166,6 @@ class WorldsStore(
     }
 
     companion object {
-        val SAVE_INTERVAL = 5.minutes
+        val SAVE_INTERVAL = 30.minutes
     }
 }
