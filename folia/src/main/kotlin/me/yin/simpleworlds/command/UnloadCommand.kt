@@ -6,14 +6,12 @@ import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import kotlinx.coroutines.runBlocking
 import me.yin.simpleworlds.command.support.CommandSupport
-import me.yin.simpleworlds.world.WorldsService
-import me.yin.simpleworlds.world.WorldsStore
+import me.yin.simpleworlds.world.WorldsManager
 import net.kyori.adventure.text.Component
 
 class UnloadCommand(
     private val support: CommandSupport,
-    private val worldsStore: WorldsStore,
-    private val worldsService: WorldsService,
+    private val worldsManager: WorldsManager,
 ) {
 
     private val plugin = support.plugin
@@ -39,8 +37,8 @@ class UnloadCommand(
                     sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载中…")))
                     plugin.server.globalRegionScheduler.run(plugin) { _ ->
                         try {
-                            worldsService.unloadWorld(worldName)
-                            runBlocking { worldsStore.save() }
+                            worldsManager.unloadWorld(worldName)
+                            runBlocking { worldsManager.save() }
                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载完成")))
                         } catch (e: Throwable) {
                             support.logger.error("卸载失败", e)

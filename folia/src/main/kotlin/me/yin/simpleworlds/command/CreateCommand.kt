@@ -6,8 +6,7 @@ import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import kotlinx.coroutines.runBlocking
 import me.yin.simpleworlds.command.support.CommandSupport
-import me.yin.simpleworlds.world.WorldsService
-import me.yin.simpleworlds.world.WorldsStore
+import me.yin.simpleworlds.world.WorldsManager
 import net.kyori.adventure.text.Component
 import org.bukkit.World
 import org.bukkit.WorldType
@@ -16,8 +15,7 @@ import java.nio.file.Files
 
 class CreateCommand(
     private val support: CommandSupport,
-    private val worldsStore: WorldsStore,
-    private val worldsService: WorldsService,
+    private val worldsManager: WorldsManager,
 ) {
 
     private val plugin = support.plugin
@@ -34,8 +32,8 @@ class CreateCommand(
                     sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建中…")))
                     plugin.server.globalRegionScheduler.run(plugin) { _ ->
                         try {
-                            worldsService.createWorld(worldName)
-                            runBlocking { worldsStore.save() }
+                            worldsManager.createWorld(worldName)
+                            runBlocking { worldsManager.save() }
                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
                         } catch (e: Throwable) {
                             support.logger.error("创建失败", e)
@@ -58,8 +56,8 @@ class CreateCommand(
                         sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建中…")))
                         plugin.server.globalRegionScheduler.run(plugin) { _ ->
                             try {
-                                worldsService.createWorld(worldName, seed)
-                                runBlocking { worldsStore.save() }
+                                worldsManager.createWorld(worldName, seed)
+                                runBlocking { worldsManager.save() }
                                 sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
                             } catch (e: Throwable) {
                                 support.logger.error("创建失败", e)
@@ -89,8 +87,8 @@ class CreateCommand(
                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建中…")))
                             plugin.server.globalRegionScheduler.run(plugin) { _ ->
                                 try {
-                                    worldsService.createWorld(worldName, seed, environment)
-                                    runBlocking { worldsStore.save() }
+                                    worldsManager.createWorld(worldName, seed, environment)
+                                    runBlocking { worldsManager.save() }
                                     sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
                                 } catch (e: Throwable) {
                                     support.logger.error("创建失败", e)
@@ -121,8 +119,8 @@ class CreateCommand(
                                 sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建中…")))
                                 plugin.server.globalRegionScheduler.run(plugin) { _ ->
                                     try {
-                                        worldsService.createWorld(worldName, seed, environment, type)
-                                        runBlocking { worldsStore.save() }
+                                        worldsManager.createWorld(worldName, seed, environment, type)
+                                        runBlocking { worldsManager.save() }
                                         sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
                                     } catch (e: Throwable) {
                                         support.logger.error("创建失败", e)
@@ -144,8 +142,8 @@ class CreateCommand(
                                     sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建中…")))
                                     plugin.server.globalRegionScheduler.run(plugin) { _ ->
                                         try {
-                                            worldsService.createWorld(worldName, seed, environment, type, generator)
-                                            runBlocking { worldsStore.save() }
+                                            worldsManager.createWorld(worldName, seed, environment, type, generator)
+                                            runBlocking { worldsManager.save() }
                                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
                                         } catch (e: Throwable) {
                                             support.logger.error("创建失败", e)

@@ -16,6 +16,8 @@ import org.bukkit.Location
 import org.bukkit.NamespacedKey
 import org.bukkit.Registry
 import org.bukkit.World
+import org.bukkit.WorldCreator
+import org.bukkit.WorldType
 import org.bukkit.plugin.java.JavaPlugin
 import org.slf4j.Logger
 import java.nio.file.Files
@@ -24,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.path.exists
 import kotlin.time.Duration.Companion.minutes
 
-class WorldsStore(
+class WorldsManager(
     private val plugin: JavaPlugin,
     private val logger: Logger,
     private val json: Json,
@@ -82,6 +84,51 @@ class WorldsStore(
                 }
             }
         }
+    }
+
+    fun createWorld(
+        name: String,
+        seed: Long? = null,
+        worldEnvironment: World.Environment = World.Environment.NORMAL,
+        worldType: WorldType? = null,
+        chunkGenerator: String? = null,
+    ): World? {
+        val worldCreator = WorldCreator(name)
+        if (seed != null) {
+            worldCreator.seed(seed)
+        }
+        worldCreator.environment(worldEnvironment)
+        if (worldType != null) {
+            worldCreator.type(worldType)
+        }
+        if (chunkGenerator != null) {
+            worldCreator.generator(chunkGenerator)
+        }
+        val world = worldCreator.createWorld()
+        if (world != null && chunkGenerator != null) {
+            chunkGenerators[name] = chunkGenerator
+        }
+        return world
+    }
+
+    fun loadWorld(name: String, chunkGenerator: String? = null): World? {
+        val worldCreator = WorldCreator(name)
+        if (chunkGenerator != null) {
+            worldCreator.generator(chunkGenerator)
+        }
+        val world = worldCreator.createWorld()
+        if (world != null && chunkGenerator != null) {
+            chunkGenerators[name] = chunkGenerator
+        }
+        return world
+    }
+
+    fun unloadWorld(name: String): Boolean {
+        val success = plugin.server.unloadWorld(name, true)
+        if (success) {
+            chunkGenerators.remove(name)
+        }
+        return success
     }
 
     private fun doLoad() {

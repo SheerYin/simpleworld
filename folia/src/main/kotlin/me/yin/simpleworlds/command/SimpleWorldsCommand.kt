@@ -4,8 +4,7 @@ import io.papermc.paper.command.brigadier.Commands
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents
 import kotlinx.coroutines.CoroutineScope
 import me.yin.simpleworlds.command.support.CommandSupport
-import me.yin.simpleworlds.world.WorldsService
-import me.yin.simpleworlds.world.WorldsStore
+import me.yin.simpleworlds.world.WorldsManager
 import org.bukkit.plugin.java.JavaPlugin
 import org.slf4j.Logger
 
@@ -14,8 +13,7 @@ class SimpleWorldsCommand(
     private val logger: Logger,
     private val prefix: String,
     private val scope: CoroutineScope,
-    private val worldsStore: WorldsStore,
-    private val worldsService: WorldsService,
+    private val worldsManager: WorldsManager,
 ) {
 
     fun register() {
@@ -24,14 +22,14 @@ class SimpleWorldsCommand(
             val rootCommand = Commands.literal(MAIN_COMMAND)
                 .requires { support.hasPermission(it, PERMISSION) }
                 // Folia 不支持运行时 createWorld / unloadWorld，相关命令暂不注册
-                // .then(CreateCommand(support, worldsStore, worldsService).root())
-                // .then(LoadCommand(support, worldsStore, worldsService).root())
-                // .then(UnloadCommand(support, worldsStore, worldsService).root())
-                .then(ReloadCommand(support, worldsStore).root())
-                .then(SaveCommand(support, worldsStore).root())
+                // .then(CreateCommand(support, worldsManager).root())
+                // .then(LoadCommand(support, worldsManager).root())
+                // .then(UnloadCommand(support, worldsManager).root())
+                .then(ReloadCommand(support, worldsManager).root())
+                .then(SaveCommand(support, worldsManager).root())
                 .then(TeleportCommand(support).root())
                 .then(TeleportLocationCommand(support).root())
-                .then(ListCommand(support, worldsStore).root())
+                .then(ListCommand(support, worldsManager).root())
                 .build()
             event.registrar().register(rootCommand, "SimpleWorlds commands", COMMAND_ALIASES)
         }

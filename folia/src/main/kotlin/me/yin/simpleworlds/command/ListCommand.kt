@@ -5,7 +5,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import me.yin.simpleworlds.command.support.CommandSupport
-import me.yin.simpleworlds.world.WorldsStore
+import me.yin.simpleworlds.world.WorldsManager
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.event.ClickEvent
 import net.kyori.adventure.text.event.HoverEvent
@@ -14,7 +14,7 @@ import org.bukkit.command.CommandSender
 
 class ListCommand(
     private val support: CommandSupport,
-    private val worldsStore: WorldsStore,
+    private val worldsManager: WorldsManager,
 ) {
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
@@ -50,7 +50,7 @@ class ListCommand(
             Component.text("所有世界 ").append(Component.text("（共 $count 个）", NamedTextColor.GRAY))
         )
 
-        val generators = worldsStore.chunkGenerators
+        val generators = worldsManager.chunkGenerators
         val start = (page - 1) * pageSize
         val end = (start + pageSize).coerceAtMost(count)
         worlds.subList(start, end).forEach { world ->

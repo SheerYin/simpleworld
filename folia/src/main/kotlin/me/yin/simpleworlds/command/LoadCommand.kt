@@ -6,8 +6,7 @@ import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import kotlinx.coroutines.runBlocking
 import me.yin.simpleworlds.command.support.CommandSupport
-import me.yin.simpleworlds.world.WorldsService
-import me.yin.simpleworlds.world.WorldsStore
+import me.yin.simpleworlds.world.WorldsManager
 import net.kyori.adventure.text.Component
 import org.bukkit.command.CommandSender
 import java.nio.file.Files
@@ -16,8 +15,7 @@ import kotlin.io.path.name
 
 class LoadCommand(
     private val support: CommandSupport,
-    private val worldsStore: WorldsStore,
-    private val worldsService: WorldsService,
+    private val worldsManager: WorldsManager,
 ) {
 
     private val plugin = support.plugin
@@ -56,8 +54,8 @@ class LoadCommand(
                     sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载中…")))
                     plugin.server.globalRegionScheduler.run(plugin) { _ ->
                         try {
-                            worldsService.loadWorld(worldName)
-                            runBlocking { worldsStore.save() }
+                            worldsManager.loadWorld(worldName)
+                            runBlocking { worldsManager.save() }
                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载完成")))
                         } catch (e: Throwable) {
                             support.logger.error("加载失败", e)
@@ -76,8 +74,8 @@ class LoadCommand(
                         sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载中…")))
                         plugin.server.globalRegionScheduler.run(plugin) { _ ->
                             try {
-                                worldsService.loadWorld(worldName, generator)
-                                runBlocking { worldsStore.save() }
+                                worldsManager.loadWorld(worldName, generator)
+                                runBlocking { worldsManager.save() }
                                 sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载完成")))
                             } catch (e: Throwable) {
                                 support.logger.error("加载失败", e)

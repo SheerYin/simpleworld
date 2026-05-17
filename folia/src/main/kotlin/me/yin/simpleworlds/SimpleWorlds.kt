@@ -7,14 +7,12 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import me.yin.simpleworlds.command.SimpleWorldsCommand
-import me.yin.simpleworlds.world.WorldsService
-import me.yin.simpleworlds.world.WorldsStore
+import me.yin.simpleworlds.world.WorldsManager
 import org.bukkit.plugin.java.JavaPlugin
 
 class SimpleWorlds : JavaPlugin() {
 
-    var worldsStore: WorldsStore? = null
-    var worldsService: WorldsService? = null
+    var worldsManager: WorldsManager? = null
     var scope: CoroutineScope? = null
 
     override fun onEnable() {
@@ -27,16 +25,14 @@ class SimpleWorlds : JavaPlugin() {
         }
 
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        val worldsStore = WorldsStore(this, logger, json, scope)
-        val worldsService = WorldsService(this, worldsStore)
+        val worldsManager = WorldsManager(this, logger, json, scope)
         this.scope = scope
-        this.worldsStore = worldsStore
-        this.worldsService = worldsService
+        this.worldsManager = worldsManager
 
-        runBlocking { worldsStore.load() }
-        worldsStore.startAutoSave()
+        runBlocking { worldsManager.load() }
+        worldsManager.startAutoSave()
 
-        SimpleWorldsCommand(this, logger, prefix, scope, worldsStore, worldsService).register()
+        SimpleWorldsCommand(this, logger, prefix, scope, worldsManager).register()
 
         logger.info("Enabled $prefix ${pluginMeta.version}")
     }
@@ -45,13 +41,12 @@ class SimpleWorlds : JavaPlugin() {
         val prefix = pluginMeta.loggerPrefix ?: pluginMeta.name
         slF4JLogger.info("Disabled $prefix ${pluginMeta.version}")
         try {
-            runBlocking { worldsStore?.shutdown() }
+            runBlocking { worldsManager?.shutdown() }
         } catch (e: Throwable) {
             slF4JLogger.error("关闭失败", e)
         }
         scope?.cancel()
         this.scope = null
-        this.worldsStore = null
-        this.worldsService = null
+        this.worldsManager = null
     }
 }

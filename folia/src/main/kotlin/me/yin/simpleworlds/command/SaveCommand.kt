@@ -5,12 +5,12 @@ import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import kotlinx.coroutines.launch
 import me.yin.simpleworlds.command.support.CommandSupport
-import me.yin.simpleworlds.world.WorldsStore
+import me.yin.simpleworlds.world.WorldsManager
 import net.kyori.adventure.text.Component
 
 class SaveCommand(
     private val support: CommandSupport,
-    private val worldsStore: WorldsStore,
+    private val worldsManager: WorldsManager,
 ) {
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
@@ -21,7 +21,7 @@ class SaveCommand(
                 sender.sendMessage(support.prefixMessage().append(Component.text("正在保存…")))
                 support.scope.launch {
                     try {
-                        if (worldsStore.trySave()) {
+                        if (worldsManager.trySave()) {
                             sender.sendMessage(support.prefixMessage().append(Component.text("保存完成")))
                         } else {
                             sender.sendMessage(support.prefixMessage().append(Component.text("已有保存或加载在进行中，请稍后再试")))
