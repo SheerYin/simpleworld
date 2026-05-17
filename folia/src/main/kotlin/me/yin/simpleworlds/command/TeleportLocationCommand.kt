@@ -21,7 +21,7 @@ class TeleportLocationCommand(
             .requires { support.hasPermission(it, PERMISSION) }
             .then(locationArgument()
                 .executes { context -> teleportSelf(context) }
-                .then(support.playerTargetArgument()
+                .then(support.playerNameArgument("target")
                     .requires { support.hasPermission(it, PERMISSION_TARGET) }
                     .executes { context -> teleportTarget(context) }
                 )

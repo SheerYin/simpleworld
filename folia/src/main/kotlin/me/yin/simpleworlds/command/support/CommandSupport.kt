@@ -43,8 +43,8 @@ class CommandSupport(
         return target
     }
 
-    fun playerTargetArgument(): RequiredArgumentBuilder<CommandSourceStack, String> {
-        return Commands.argument("target", StringArgumentType.word())
+    fun playerNameArgument(argumentName: String): RequiredArgumentBuilder<CommandSourceStack, String> {
+        return Commands.argument(argumentName, StringArgumentType.word())
             .suggests { _, builder ->
                 val remaining = builder.remaining
                 for (player in plugin.server.onlinePlayers) {
