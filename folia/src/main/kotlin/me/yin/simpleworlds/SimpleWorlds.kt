@@ -44,6 +44,7 @@ class SimpleWorlds : JavaPlugin() {
     override fun onDisable() {
         val prefix = pluginMeta.loggerPrefix ?: pluginMeta.name
         slF4JLogger.info("Disabled $prefix ${pluginMeta.version}")
+        slF4JLogger.info("开始保存,最多等待 $SHUTDOWN_TIMEOUT")
         try {
             runBlocking {
                 withTimeout(SHUTDOWN_TIMEOUT) { worldsManager?.shutdown() }
