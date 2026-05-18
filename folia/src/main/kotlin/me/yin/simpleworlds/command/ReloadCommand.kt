@@ -3,6 +3,7 @@ package me.yin.simpleworlds.command
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import me.yin.simpleworlds.command.support.CommandSupport
 import me.yin.simpleworlds.world.WorldsManager
@@ -26,7 +27,9 @@ class ReloadCommand(
                         } else {
                             sender.sendMessage(support.prefixMessage().append(Component.text("已有保存或加载在进行中,请稍后再试")))
                         }
-                    } catch (e: Throwable) {
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
                         support.logger.error("重新加载失败", e)
                         sender.sendMessage(support.prefixMessage().append(Component.text("重新加载失败：${e.message}")))
                     }

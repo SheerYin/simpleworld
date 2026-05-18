@@ -1,5 +1,6 @@
 package me.yin.simpleworlds.world
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -20,8 +21,11 @@ import org.bukkit.WorldCreator
 import org.bukkit.WorldType
 import org.bukkit.plugin.java.JavaPlugin
 import org.slf4j.Logger
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.path.exists
 import kotlin.time.Duration.Companion.minutes
@@ -79,7 +83,9 @@ class WorldsManager(
                 delay(SAVE_INTERVAL)
                 try {
                     save()
-                } catch (e: Throwable) {
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
                     logger.error("保存失败", e)
                 }
             }
@@ -181,7 +187,16 @@ class WorldsManager(
             )
         }
         Files.createDirectories(path.parent)
-        Files.writeString(path, json.encodeToString(sections))
+        val temporary = path.resolveSibling("${path.fileName}.temporary")
+        Files.writeString(
+            temporary,
+            json.encodeToString(sections),
+            StandardCharsets.UTF_8,
+            StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING,
+            StandardOpenOption.SYNC,
+        )
+        Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
     }
 
     private fun applyConfig(world: World, section: WorldSection) {

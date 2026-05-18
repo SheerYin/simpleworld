@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import me.yin.simpleworlds.command.support.CommandSupport
 import me.yin.simpleworlds.world.WorldsManager
@@ -35,7 +36,9 @@ class CreateCommand(
                             worldsManager.createWorld(worldName)
                             runBlocking { worldsManager.save() }
                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
-                        } catch (e: Throwable) {
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
                             support.logger.error("创建失败", e)
                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建失败：${e.message}")))
                         }
@@ -59,7 +62,9 @@ class CreateCommand(
                                 worldsManager.createWorld(worldName, seed)
                                 runBlocking { worldsManager.save() }
                                 sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
-                            } catch (e: Throwable) {
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
                                 support.logger.error("创建失败", e)
                                 sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建失败：${e.message}")))
                             }
@@ -90,7 +95,9 @@ class CreateCommand(
                                     worldsManager.createWorld(worldName, seed, environment)
                                     runBlocking { worldsManager.save() }
                                     sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
-                                } catch (e: Throwable) {
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
                                     support.logger.error("创建失败", e)
                                     sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建失败：${e.message}")))
                                 }
@@ -122,7 +129,9 @@ class CreateCommand(
                                         worldsManager.createWorld(worldName, seed, environment, type)
                                         runBlocking { worldsManager.save() }
                                         sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
-                                    } catch (e: Throwable) {
+                                    } catch (e: CancellationException) {
+                                        throw e
+                                    } catch (e: Exception) {
                                         support.logger.error("创建失败", e)
                                         sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建失败：${e.message}")))
                                     }
@@ -145,7 +154,9 @@ class CreateCommand(
                                             worldsManager.createWorld(worldName, seed, environment, type, generator)
                                             runBlocking { worldsManager.save() }
                                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
-                                        } catch (e: Throwable) {
+                                        } catch (e: CancellationException) {
+                                            throw e
+                                        } catch (e: Exception) {
                                             support.logger.error("创建失败", e)
                                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建失败：${e.message}")))
                                         }

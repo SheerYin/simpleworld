@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import me.yin.simpleworlds.command.support.CommandSupport
 import me.yin.simpleworlds.world.WorldsManager
@@ -40,7 +41,9 @@ class UnloadCommand(
                             worldsManager.unloadWorld(worldName)
                             runBlocking { worldsManager.save() }
                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载完成")))
-                        } catch (e: Throwable) {
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
                             support.logger.error("卸载失败", e)
                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载失败：${e.message}")))
                         }
