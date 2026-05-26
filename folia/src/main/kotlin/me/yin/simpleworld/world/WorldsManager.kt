@@ -1,4 +1,4 @@
-package me.yin.simpleworlds.world
+package me.yin.simpleworld.world
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -10,7 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
-import me.yin.simpleworlds.model.WorldSection
+import me.yin.simpleworld.model.WorldSection
 import org.bukkit.Difficulty
 import org.bukkit.GameRule
 import org.bukkit.Location

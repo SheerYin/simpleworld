@@ -1,4 +1,4 @@
-package me.yin.simpleworlds.command
+package me.yin.simpleworld.command
 
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
@@ -6,8 +6,8 @@ import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
-import me.yin.simpleworlds.command.support.CommandSupport
-import me.yin.simpleworlds.world.WorldsManager
+import me.yin.simpleworld.command.support.CommandSupport
+import me.yin.simpleworld.world.WorldsManager
 import net.kyori.adventure.text.Component
 
 class UnloadCommand(
@@ -54,6 +54,6 @@ class UnloadCommand(
     }
 
     companion object {
-        const val PERMISSION = "simpleworlds.command.unload"
+        const val PERMISSION = "simpleworld.command.unload"
     }
 }

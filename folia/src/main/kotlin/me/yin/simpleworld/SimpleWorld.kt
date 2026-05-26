@@ -1,4 +1,4 @@
-package me.yin.simpleworlds
+package me.yin.simpleworld
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -9,12 +9,12 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
-import me.yin.simpleworlds.command.SimpleWorldsCommand
-import me.yin.simpleworlds.world.WorldsManager
+import me.yin.simpleworld.command.SimpleWorldCommand
+import me.yin.simpleworld.world.WorldsManager
 import org.bukkit.plugin.java.JavaPlugin
 import kotlin.time.Duration.Companion.seconds
 
-class SimpleWorlds : JavaPlugin() {
+class SimpleWorld : JavaPlugin() {
 
     var worldsManager: WorldsManager? = null
     var scope: CoroutineScope? = null
@@ -36,7 +36,7 @@ class SimpleWorlds : JavaPlugin() {
         runBlocking { worldsManager.load() }
         worldsManager.startAutoSave()
 
-        SimpleWorldsCommand(this, logger, prefix, scope, worldsManager).register()
+        SimpleWorldCommand(this, logger, prefix, scope, worldsManager).register()
 
         logger.info("Enabled $prefix ${pluginMeta.version}")
     }

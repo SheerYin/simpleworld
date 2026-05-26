@@ -1,4 +1,4 @@
-package me.yin.simpleworlds.model
+package me.yin.simpleworld.model
 
 import kotlinx.serialization.Serializable
 

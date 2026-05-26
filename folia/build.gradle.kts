@@ -14,7 +14,7 @@ plugins {
     alias(libs.plugins.resource.factory.paper)
 }
 
-group = "me.yin.simpleworlds"
+group = "me.yin.simpleworld"
 version = "1.0.0-SNAPSHOT"
 
 kotlin {
@@ -34,7 +34,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
 }
 
-val minecraftPluginName = "SimpleWorlds"
+val minecraftPluginName = "SimpleWorld"
 val minecraftPluginApiVersion = "1.21.11"
 val minecraftPluginVersion = project.version.toString()
 val minecraftPluginAuthors = listOf("尹")

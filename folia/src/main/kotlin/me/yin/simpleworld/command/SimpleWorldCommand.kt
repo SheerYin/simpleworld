@@ -1,14 +1,14 @@
-package me.yin.simpleworlds.command
+package me.yin.simpleworld.command
 
 import io.papermc.paper.command.brigadier.Commands
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents
 import kotlinx.coroutines.CoroutineScope
-import me.yin.simpleworlds.command.support.CommandSupport
-import me.yin.simpleworlds.world.WorldsManager
+import me.yin.simpleworld.command.support.CommandSupport
+import me.yin.simpleworld.world.WorldsManager
 import org.bukkit.plugin.java.JavaPlugin
 import org.slf4j.Logger
 
-class SimpleWorldsCommand(
+class SimpleWorldCommand(
     private val plugin: JavaPlugin,
     private val logger: Logger,
     private val prefix: String,
@@ -31,13 +31,13 @@ class SimpleWorldsCommand(
                 .then(SetSpawnCommand(support).root())
                 .then(ListCommand(support, worldsManager).root())
                 .build()
-            event.registrar().register(rootCommand, "SimpleWorlds commands", COMMAND_ALIASES)
+            event.registrar().register(rootCommand, "SimpleWorld commands", COMMAND_ALIASES)
         }
     }
 
     companion object {
-        const val MAIN_COMMAND = "simpleworlds"
-        const val PERMISSION = "simpleworlds.command"
+        const val MAIN_COMMAND = "simpleworld"
+        const val PERMISSION = "simpleworld.command"
         val COMMAND_ALIASES = listOf("sw")
     }
 }

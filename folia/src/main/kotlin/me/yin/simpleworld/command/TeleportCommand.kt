@@ -1,4 +1,4 @@
-package me.yin.simpleworlds.command
+package me.yin.simpleworld.command
 
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
@@ -6,7 +6,7 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
-import me.yin.simpleworlds.command.support.CommandSupport
+import me.yin.simpleworld.command.support.CommandSupport
 import net.kyori.adventure.text.Component
 import org.bukkit.Location
 import org.bukkit.World
@@ -119,7 +119,7 @@ class TeleportCommand(
     }
 
     companion object {
-        const val PERMISSION = "simpleworlds.command.teleport"
-        const val PERMISSION_TARGET = "simpleworlds.command.teleport.target"
+        const val PERMISSION = "simpleworld.command.teleport"
+        const val PERMISSION_TARGET = "simpleworld.command.teleport.target"
     }
 }

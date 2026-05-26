@@ -1,11 +1,11 @@
-package me.yin.simpleworlds.command
+package me.yin.simpleworld.command
 
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
-import me.yin.simpleworlds.command.support.CommandSupport
-import me.yin.simpleworlds.world.WorldsManager
+import me.yin.simpleworld.command.support.CommandSupport
+import me.yin.simpleworld.world.WorldsManager
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.event.ClickEvent
 import net.kyori.adventure.text.event.HoverEvent
@@ -67,7 +67,7 @@ class ListCommand(
                 .append(Component.text(name).hoverEvent(HoverEvent.showText(hover)))
             val teleportPart = Component.text(" [传送]", NamedTextColor.GREEN)
                 .hoverEvent(HoverEvent.showText(Component.text("点击传送", NamedTextColor.GRAY)))
-                .clickEvent(ClickEvent.runCommand("/simpleworlds teleport ${sender.name} $name"))
+                .clickEvent(ClickEvent.runCommand("/simpleworld teleport ${sender.name} $name"))
 
             sender.sendMessage(worldPart.append(teleportPart))
         }
@@ -77,10 +77,10 @@ class ListCommand(
 
         val previousBtn = Component.text("[上一页]", NamedTextColor.GREEN)
             .hoverEvent(HoverEvent.showText(Component.text("点击前往上一页", NamedTextColor.GRAY)))
-            .clickEvent(ClickEvent.runCommand("/simpleworlds list $previousPage"))
+            .clickEvent(ClickEvent.runCommand("/simpleworld list $previousPage"))
         val nextBtn = Component.text("[下一页]", NamedTextColor.GREEN)
             .hoverEvent(HoverEvent.showText(Component.text("点击前往下一页", NamedTextColor.GRAY)))
-            .clickEvent(ClickEvent.runCommand("/simpleworlds list $nextPage"))
+            .clickEvent(ClickEvent.runCommand("/simpleworld list $nextPage"))
 
         val footer = previousBtn
             .append(Component.text(" [$page/$totalPages] "))
@@ -89,6 +89,6 @@ class ListCommand(
     }
 
     companion object {
-        const val PERMISSION = "simpleworlds.command.list"
+        const val PERMISSION = "simpleworld.command.list"
     }
 }

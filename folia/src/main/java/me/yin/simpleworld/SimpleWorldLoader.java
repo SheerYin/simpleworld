@@ -1,4 +1,4 @@
-package me.yin.simpleworlds;
+package me.yin.simpleworld;
 
 import io.papermc.paper.plugin.loader.PluginClasspathBuilder;
 import io.papermc.paper.plugin.loader.PluginLoader;
@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
-public class SimpleWorldsLoader implements PluginLoader {
+public class SimpleWorldLoader implements PluginLoader {
 
     @Override
     public void classloader(@NotNull PluginClasspathBuilder classpathBuilder) {
@@ -27,7 +27,7 @@ public class SimpleWorldsLoader implements PluginLoader {
                 ).build()
         );
 
-        var inputStream = SimpleWorldsLoader.class.getClassLoader().getResourceAsStream("libraries.txt");
+        var inputStream = SimpleWorldLoader.class.getClassLoader().getResourceAsStream("libraries.txt");
         if (inputStream == null) {
             throw new IllegalStateException("Missing libraries.txt in plugin jar");
         }
