@@ -7,7 +7,7 @@ import io.papermc.paper.command.brigadier.Commands
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import me.yin.simpleworld.command.support.CommandSupport
-import me.yin.simpleworld.world.WorldsManager
+import me.yin.simpleworld.world.WorldManager
 import net.kyori.adventure.text.Component
 import org.bukkit.World
 import org.bukkit.WorldType
@@ -16,7 +16,7 @@ import java.nio.file.Files
 
 class CreateCommand(
     private val support: CommandSupport,
-    private val worldsManager: WorldsManager,
+    private val worldManager: WorldManager,
 ) {
 
     private val plugin = support.plugin
@@ -33,8 +33,8 @@ class CreateCommand(
                     sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建中…")))
                     plugin.server.globalRegionScheduler.run(plugin) { _ ->
                         try {
-                            worldsManager.createWorld(worldName)
-                            runBlocking { worldsManager.save() }
+                            worldManager.createWorld(worldName)
+                            runBlocking { worldManager.save() }
                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
                         } catch (e: CancellationException) {
                             throw e
@@ -59,8 +59,8 @@ class CreateCommand(
                         sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建中…")))
                         plugin.server.globalRegionScheduler.run(plugin) { _ ->
                             try {
-                                worldsManager.createWorld(worldName, seed)
-                                runBlocking { worldsManager.save() }
+                                worldManager.createWorld(worldName, seed)
+                                runBlocking { worldManager.save() }
                                 sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
                             } catch (e: CancellationException) {
                                 throw e
@@ -92,8 +92,8 @@ class CreateCommand(
                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建中…")))
                             plugin.server.globalRegionScheduler.run(plugin) { _ ->
                                 try {
-                                    worldsManager.createWorld(worldName, seed, environment)
-                                    runBlocking { worldsManager.save() }
+                                    worldManager.createWorld(worldName, seed, environment)
+                                    runBlocking { worldManager.save() }
                                     sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
                                 } catch (e: CancellationException) {
                                     throw e
@@ -126,8 +126,8 @@ class CreateCommand(
                                 sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建中…")))
                                 plugin.server.globalRegionScheduler.run(plugin) { _ ->
                                     try {
-                                        worldsManager.createWorld(worldName, seed, environment, type)
-                                        runBlocking { worldsManager.save() }
+                                        worldManager.createWorld(worldName, seed, environment, type)
+                                        runBlocking { worldManager.save() }
                                         sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
                                     } catch (e: CancellationException) {
                                         throw e
@@ -151,8 +151,8 @@ class CreateCommand(
                                     sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建中…")))
                                     plugin.server.globalRegionScheduler.run(plugin) { _ ->
                                         try {
-                                            worldsManager.createWorld(worldName, seed, environment, type, generator)
-                                            runBlocking { worldsManager.save() }
+                                            worldManager.createWorld(worldName, seed, environment, type, generator)
+                                            runBlocking { worldManager.save() }
                                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 创建完成")))
                                         } catch (e: CancellationException) {
                                             throw e

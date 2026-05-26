@@ -7,7 +7,7 @@ import io.papermc.paper.command.brigadier.Commands
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import me.yin.simpleworld.command.support.CommandSupport
-import me.yin.simpleworld.world.WorldsManager
+import me.yin.simpleworld.world.WorldManager
 import net.kyori.adventure.text.Component
 import org.bukkit.command.CommandSender
 import java.nio.file.Files
@@ -16,7 +16,7 @@ import kotlin.io.path.name
 
 class LoadCommand(
     private val support: CommandSupport,
-    private val worldsManager: WorldsManager,
+    private val worldManager: WorldManager,
 ) {
 
     private val plugin = support.plugin
@@ -55,8 +55,8 @@ class LoadCommand(
                     sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载中…")))
                     plugin.server.globalRegionScheduler.run(plugin) { _ ->
                         try {
-                            worldsManager.loadWorld(worldName)
-                            runBlocking { worldsManager.save() }
+                            worldManager.loadWorld(worldName)
+                            runBlocking { worldManager.save() }
                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载完成")))
                         } catch (e: CancellationException) {
                             throw e
@@ -77,8 +77,8 @@ class LoadCommand(
                         sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载中…")))
                         plugin.server.globalRegionScheduler.run(plugin) { _ ->
                             try {
-                                worldsManager.loadWorld(worldName, generator)
-                                runBlocking { worldsManager.save() }
+                                worldManager.loadWorld(worldName, generator)
+                                runBlocking { worldManager.save() }
                                 sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载完成")))
                             } catch (e: CancellationException) {
                                 throw e

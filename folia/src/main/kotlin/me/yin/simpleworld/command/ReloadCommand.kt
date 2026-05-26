@@ -6,12 +6,12 @@ import io.papermc.paper.command.brigadier.Commands
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import me.yin.simpleworld.command.support.CommandSupport
-import me.yin.simpleworld.world.WorldsManager
+import me.yin.simpleworld.world.WorldManager
 import net.kyori.adventure.text.Component
 
 class ReloadCommand(
     private val support: CommandSupport,
-    private val worldsManager: WorldsManager,
+    private val worldManager: WorldManager,
 ) {
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
@@ -22,7 +22,7 @@ class ReloadCommand(
                 sender.sendMessage(support.prefixMessage().append(Component.text("正在重新加载…")))
                 support.scope.launch {
                     try {
-                        if (worldsManager.tryLoad()) {
+                        if (worldManager.tryLoad()) {
                             sender.sendMessage(support.prefixMessage().append(Component.text("重新加载完成")))
                         } else {
                             sender.sendMessage(support.prefixMessage().append(Component.text("已有保存或加载在进行中,请稍后再试")))

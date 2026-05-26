@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.path.exists
 import kotlin.time.Duration.Companion.minutes
 
-class WorldsManager(
+class WorldManager(
     private val plugin: JavaPlugin,
     private val logger: Logger,
     private val json: Json,
@@ -41,7 +41,7 @@ class WorldsManager(
     var chunkGenerators = ConcurrentHashMap<String, String>()
         private set
 
-    private val path: Path = plugin.dataPath.resolve("worlds.json")
+    private val path: Path = plugin.dataPath.resolve("world.json")
 
     private val mutex = Mutex()
 

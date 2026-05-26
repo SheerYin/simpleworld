@@ -10,13 +10,13 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import me.yin.simpleworld.command.SimpleWorldCommand
-import me.yin.simpleworld.world.WorldsManager
+import me.yin.simpleworld.world.WorldManager
 import org.bukkit.plugin.java.JavaPlugin
 import kotlin.time.Duration.Companion.seconds
 
 class SimpleWorld : JavaPlugin() {
 
-    var worldsManager: WorldsManager? = null
+    var worldManager: WorldManager? = null
     var scope: CoroutineScope? = null
 
     override fun onEnable() {
@@ -29,14 +29,14 @@ class SimpleWorld : JavaPlugin() {
         }
 
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        val worldsManager = WorldsManager(this, logger, json, scope)
+        val worldManager = WorldManager(this, logger, json, scope)
         this.scope = scope
-        this.worldsManager = worldsManager
+        this.worldManager = worldManager
 
-        runBlocking { worldsManager.load() }
-        worldsManager.startAutoSave()
+        runBlocking { worldManager.load() }
+        worldManager.startAutoSave()
 
-        SimpleWorldCommand(this, logger, prefix, scope, worldsManager).register()
+        SimpleWorldCommand(this, logger, prefix, scope, worldManager).register()
 
         logger.info("Enabled $prefix ${pluginMeta.version}")
     }
@@ -47,7 +47,7 @@ class SimpleWorld : JavaPlugin() {
         slF4JLogger.info("开始保存,最多等待 $SHUTDOWN_TIMEOUT")
         try {
             runBlocking {
-                withTimeout(SHUTDOWN_TIMEOUT) { worldsManager?.shutdown() }
+                withTimeout(SHUTDOWN_TIMEOUT) { worldManager?.shutdown() }
             }
         } catch (e: TimeoutCancellationException) {
             slF4JLogger.error("shutdown 超时 $SHUTDOWN_TIMEOUT,放弃")
@@ -58,7 +58,7 @@ class SimpleWorld : JavaPlugin() {
         }
         scope?.cancel()
         this.scope = null
-        this.worldsManager = null
+        this.worldManager = null
     }
 
     companion object {

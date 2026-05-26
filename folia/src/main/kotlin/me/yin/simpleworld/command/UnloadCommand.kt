@@ -7,12 +7,12 @@ import io.papermc.paper.command.brigadier.Commands
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import me.yin.simpleworld.command.support.CommandSupport
-import me.yin.simpleworld.world.WorldsManager
+import me.yin.simpleworld.world.WorldManager
 import net.kyori.adventure.text.Component
 
 class UnloadCommand(
     private val support: CommandSupport,
-    private val worldsManager: WorldsManager,
+    private val worldManager: WorldManager,
 ) {
 
     private val plugin = support.plugin
@@ -38,8 +38,8 @@ class UnloadCommand(
                     sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载中…")))
                     plugin.server.globalRegionScheduler.run(plugin) { _ ->
                         try {
-                            worldsManager.unloadWorld(worldName)
-                            runBlocking { worldsManager.save() }
+                            worldManager.unloadWorld(worldName)
+                            runBlocking { worldManager.save() }
                             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载完成")))
                         } catch (e: CancellationException) {
                             throw e
