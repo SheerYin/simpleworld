@@ -67,7 +67,7 @@ class ListCommand(
                 .append(Component.text(name).hoverEvent(HoverEvent.showText(hover)))
             val teleportPart = Component.text(" [传送]", NamedTextColor.GREEN)
                 .hoverEvent(HoverEvent.showText(Component.text("点击传送", NamedTextColor.GRAY)))
-                .clickEvent(ClickEvent.runCommand("/simpleworlds teleport $name"))
+                .clickEvent(ClickEvent.runCommand("/simpleworlds teleport ${sender.name} $name"))
 
             sender.sendMessage(worldPart.append(teleportPart))
         }

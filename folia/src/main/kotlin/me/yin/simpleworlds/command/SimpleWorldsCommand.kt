@@ -28,7 +28,7 @@ class SimpleWorldsCommand(
                 .then(ReloadCommand(support, worldsManager).root())
                 .then(SaveCommand(support, worldsManager).root())
                 .then(TeleportCommand(support).root())
-                .then(TeleportLocationCommand(support).root())
+                .then(SetSpawnCommand(support).root())
                 .then(ListCommand(support, worldsManager).root())
                 .build()
             event.registrar().register(rootCommand, "SimpleWorlds commands", COMMAND_ALIASES)

@@ -11,61 +11,58 @@ import net.kyori.adventure.text.Component
 import org.bukkit.Location
 import org.bukkit.World
 import org.bukkit.command.CommandSender
-import org.bukkit.entity.Player
 
-class TeleportCommand(
+class SetSpawnCommand(
     private val support: CommandSupport,
 ) {
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
-        return Commands.literal("teleport")
+        return Commands.literal("setspawn")
             .requires { support.hasPermission(it, PERMISSION) }
-            .then(support.playerNameArgument("target")
-                .then(worldArgument()
-                    .executes { context -> handle(context, hasPosition = false) }
-                    .then(positionArgument()
-                        .executes { context -> handle(context, hasPosition = true) }
-                    )
+            .executes { context -> setFromPlayer(context) }
+            .then(worldArgument()
+                .then(locationArgument()
+                    .executes { context -> setFromArgument(context) }
                 )
             )
     }
 
-    private fun handle(context: CommandContext<CommandSourceStack>, hasPosition: Boolean): Int {
-        val sender = context.source.sender
-        val targetName = StringArgumentType.getString(context, "target")
-        val target = support.resolveTarget(sender, targetName) ?: return 0
-        if (target != sender && !support.hasPermission(context.source, PERMISSION_TARGET)) {
-            sender.sendMessage(support.prefixMessage().append(Component.text("没有权限传送其他玩家")))
-            return 0
-        }
-        val location = resolveLocation(sender, context, hasPosition) ?: return 0
-        target.scheduler.run(support.plugin, { teleport(target, location) }, null)
+    private fun setFromPlayer(context: CommandContext<CommandSourceStack>): Int {
+        val player = support.requirePlayer(context.source.sender) ?: return 0
+        val location = player.location
+        location.world.setSpawnLocation(location)
+        player.sendMessage(
+            support.prefixMessage().append(
+                Component.text("已将世界 ${location.world.name} 的出生点设为当前位置")
+            )
+        )
         return 1
     }
 
-    private fun resolveLocation(
-        sender: CommandSender,
-        context: CommandContext<CommandSourceStack>,
-        hasPosition: Boolean,
-    ): Location? {
+    private fun setFromArgument(context: CommandContext<CommandSourceStack>): Int {
+        val sender = context.source.sender
         val worldName = StringArgumentType.getString(context, "world")
         val world = support.plugin.server.getWorld(worldName)
         if (world == null) {
             sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 不存在")))
-            return null
+            return 0
         }
-        if (!hasPosition) {
-            return world.spawnLocation
-        }
-        val positionText = StringArgumentType.getString(context, "position")
-        return parsePosition(sender, world, positionText)
+        val locationText = StringArgumentType.getString(context, "position")
+        val location = resolveLocation(sender, world, locationText) ?: return 0
+        world.setSpawnLocation(location)
+        sender.sendMessage(
+            support.prefixMessage().append(
+                Component.text("已将世界 ${world.name} 的出生点设为 ${location.x}, ${location.y}, ${location.z}")
+            )
+        )
+        return 1
     }
 
-    private fun parsePosition(sender: CommandSender, world: World, positionText: String): Location? {
-        val parts = positionText.split(",").map { it.trim() }
+    private fun resolveLocation(sender: CommandSender, world: World, locationText: String): Location? {
+        val parts = locationText.split(",").map { it.trim() }
         val size = parts.size
         if (size != 3 && size != 5) {
-            sender.sendMessage(support.prefixMessage().append(Component.text("坐标 $positionText 格式错误")))
+            sender.sendMessage(support.prefixMessage().append(Component.text("坐标 $locationText 格式错误")))
             return null
         }
         val x = parts[0].toDoubleOrNull()
@@ -83,14 +80,6 @@ class TeleportCommand(
         return Location(world, x, y, z, yaw, pitch)
     }
 
-    private fun teleport(player: Player, location: Location) {
-        player.leaveVehicle()
-        for (passenger in player.passengers) {
-            passenger.leaveVehicle()
-        }
-        player.teleportAsync(location)
-    }
-
     private fun worldArgument(): RequiredArgumentBuilder<CommandSourceStack, String> {
         return Commands.argument("world", StringArgumentType.word())
             .suggests { _, builder ->
@@ -105,7 +94,7 @@ class TeleportCommand(
             }
     }
 
-    private fun positionArgument(): RequiredArgumentBuilder<CommandSourceStack, String> {
+    private fun locationArgument(): RequiredArgumentBuilder<CommandSourceStack, String> {
         return Commands.argument("position", StringArgumentType.string())
             .suggests { context, builder ->
                 val worldName = StringArgumentType.getString(context, "world")
@@ -119,7 +108,6 @@ class TeleportCommand(
     }
 
     companion object {
-        const val PERMISSION = "simpleworlds.command.teleport"
-        const val PERMISSION_TARGET = "simpleworlds.command.teleport.target"
+        const val PERMISSION = "simpleworlds.command.setspawn"
     }
 }
