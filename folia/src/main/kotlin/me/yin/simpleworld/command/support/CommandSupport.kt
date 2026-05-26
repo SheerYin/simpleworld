@@ -19,7 +19,7 @@ class CommandSupport(
 ) {
 
     fun prefixMessage(message: String = ""): Component {
-        return Component.text("[$prefix] " + message)
+        return Component.text("[$prefix] $message")
     }
 
     fun hasPermission(source: CommandSourceStack, permission: String): Boolean {
