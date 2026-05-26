@@ -36,13 +36,13 @@ class ListCommand(
         val worlds = support.plugin.server.worlds.sortedBy { it.name }
         val count = worlds.size
         if (count == 0) {
-            sender.sendMessage(support.prefixMessage().append(Component.text("没有世界")))
+            sender.sendMessage(support.prefixMessage("没有世界"))
             return
         }
 
         val totalPages = ((count + pageSize - 1) / pageSize).coerceAtLeast(1)
         if (page !in 1..totalPages) {
-            sender.sendMessage(support.prefixMessage().append(Component.text("页码 $page 错误！请输入 1 到 $totalPages 页码")))
+            sender.sendMessage(support.prefixMessage("页码 $page 错误！请输入 1 到 $totalPages 页码"))
             return
         }
 

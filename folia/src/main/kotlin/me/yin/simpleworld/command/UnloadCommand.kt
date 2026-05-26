@@ -8,7 +8,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import me.yin.simpleworld.command.support.CommandSupport
 import me.yin.simpleworld.world.WorldManager
-import net.kyori.adventure.text.Component
 
 class UnloadCommand(
     private val support: CommandSupport,
@@ -35,17 +34,17 @@ class UnloadCommand(
                     val sender = context.source.sender
                     val worldName = StringArgumentType.getString(context, "name")
 
-                    sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载中…")))
+                    sender.sendMessage(support.prefixMessage("世界 $worldName 卸载中…"))
                     plugin.server.globalRegionScheduler.run(plugin) { _ ->
                         try {
                             worldManager.unloadWorld(worldName)
                             runBlocking { worldManager.save() }
-                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载完成")))
+                            sender.sendMessage(support.prefixMessage("世界 $worldName 卸载完成"))
                         } catch (e: CancellationException) {
                             throw e
                         } catch (e: Exception) {
                             support.logger.error("卸载失败", e)
-                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 卸载失败：${e.message}")))
+                            sender.sendMessage(support.prefixMessage("世界 $worldName 卸载失败：${e.message}"))
                         }
                     }
                     return@executes 1

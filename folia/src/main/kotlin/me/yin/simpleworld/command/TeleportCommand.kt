@@ -7,7 +7,6 @@ import com.mojang.brigadier.context.CommandContext
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import me.yin.simpleworld.command.support.CommandSupport
-import net.kyori.adventure.text.Component
 import org.bukkit.Location
 import org.bukkit.World
 import org.bukkit.command.CommandSender
@@ -35,7 +34,7 @@ class TeleportCommand(
         val targetName = StringArgumentType.getString(context, "target")
         val target = support.resolveTarget(sender, targetName) ?: return 0
         if (target != sender && !support.hasPermission(context.source, PERMISSION_TARGET)) {
-            sender.sendMessage(support.prefixMessage().append(Component.text("没有权限传送其他玩家")))
+            sender.sendMessage(support.prefixMessage("没有权限传送其他玩家"))
             return 0
         }
         val location = resolveLocation(sender, context, hasPosition) ?: return 0
@@ -51,7 +50,7 @@ class TeleportCommand(
         val worldName = StringArgumentType.getString(context, "world")
         val world = support.plugin.server.getWorld(worldName)
         if (world == null) {
-            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 不存在")))
+            sender.sendMessage(support.prefixMessage("世界 $worldName 不存在"))
             return null
         }
         if (!hasPosition) {
@@ -65,14 +64,14 @@ class TeleportCommand(
         val parts = positionText.split(",").map { it.trim() }
         val size = parts.size
         if (size != 3 && size != 5) {
-            sender.sendMessage(support.prefixMessage().append(Component.text("坐标 $positionText 格式错误")))
+            sender.sendMessage(support.prefixMessage("坐标 $positionText 格式错误"))
             return null
         }
         val x = parts[0].toDoubleOrNull()
         val y = parts[1].toDoubleOrNull()
         val z = parts[2].toDoubleOrNull()
         if (x == null || y == null || z == null) {
-            sender.sendMessage(support.prefixMessage().append(Component.text("坐标解析错误")))
+            sender.sendMessage(support.prefixMessage("坐标解析错误"))
             return null
         }
         if (size == 3) {

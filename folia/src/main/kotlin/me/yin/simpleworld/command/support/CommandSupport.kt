@@ -18,8 +18,8 @@ class CommandSupport(
     val scope: CoroutineScope,
 ) {
 
-    fun prefixMessage(): Component {
-        return Component.text("[$prefix] ")
+    fun prefixMessage(message: String = ""): Component {
+        return Component.text("[$prefix] " + message)
     }
 
     fun hasPermission(source: CommandSourceStack, permission: String): Boolean {
@@ -29,7 +29,7 @@ class CommandSupport(
 
     fun requirePlayer(sender: CommandSender): Player? {
         if (sender !is Player) {
-            sender.sendMessage(prefixMessage().append(Component.text("此命令仅限玩家执行")))
+            sender.sendMessage(prefixMessage("此命令仅限玩家执行"))
             return null
         }
         return sender
@@ -38,7 +38,7 @@ class CommandSupport(
     fun resolveTarget(sender: CommandSender, name: String): Player? {
         val target = plugin.server.getPlayerExact(name)
         if (target == null) {
-            sender.sendMessage(prefixMessage().append(Component.text("玩家 $name 不在线")))
+            sender.sendMessage(prefixMessage("玩家 $name 不在线"))
         }
         return target
     }

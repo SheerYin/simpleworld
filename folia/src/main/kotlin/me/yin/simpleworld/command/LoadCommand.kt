@@ -8,7 +8,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import me.yin.simpleworld.command.support.CommandSupport
 import me.yin.simpleworld.world.WorldManager
-import net.kyori.adventure.text.Component
 import org.bukkit.command.CommandSender
 import java.nio.file.Files
 import java.util.concurrent.CompletableFuture
@@ -52,17 +51,17 @@ class LoadCommand(
                     val worldName = StringArgumentType.getString(context, "name")
                     if (!precheck(sender, worldName)) return@executes 0
 
-                    sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载中…")))
+                    sender.sendMessage(support.prefixMessage("世界 $worldName 加载中…"))
                     plugin.server.globalRegionScheduler.run(plugin) { _ ->
                         try {
                             worldManager.loadWorld(worldName)
                             runBlocking { worldManager.save() }
-                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载完成")))
+                            sender.sendMessage(support.prefixMessage("世界 $worldName 加载完成"))
                         } catch (e: CancellationException) {
                             throw e
                         } catch (e: Exception) {
                             support.logger.error("加载失败", e)
-                            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载失败：${e.message}")))
+                            sender.sendMessage(support.prefixMessage("世界 $worldName 加载失败：${e.message}"))
                         }
                     }
                     return@executes 1
@@ -74,17 +73,17 @@ class LoadCommand(
                         if (!precheck(sender, worldName)) return@executes 0
                         val generator = StringArgumentType.getString(context, "chunk_generator")
 
-                        sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载中…")))
+                        sender.sendMessage(support.prefixMessage("世界 $worldName 加载中…"))
                         plugin.server.globalRegionScheduler.run(plugin) { _ ->
                             try {
                                 worldManager.loadWorld(worldName, generator)
                                 runBlocking { worldManager.save() }
-                                sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载完成")))
+                                sender.sendMessage(support.prefixMessage("世界 $worldName 加载完成"))
                             } catch (e: CancellationException) {
                                 throw e
                             } catch (e: Exception) {
                                 support.logger.error("加载失败", e)
-                                sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 加载失败：${e.message}")))
+                                sender.sendMessage(support.prefixMessage("世界 $worldName 加载失败：${e.message}"))
                             }
                         }
                         return@executes 1
@@ -95,12 +94,12 @@ class LoadCommand(
 
     private fun precheck(sender: CommandSender, worldName: String): Boolean {
         if (plugin.server.getWorld(worldName) != null) {
-            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 已经加载")))
+            sender.sendMessage(support.prefixMessage("世界 $worldName 已经加载"))
             return false
         }
         val path = plugin.server.worldContainer.toPath().resolve(worldName).resolve("level.dat")
         if (Files.notExists(path)) {
-            sender.sendMessage(support.prefixMessage().append(Component.text("$worldName 不是世界，无法加载")))
+            sender.sendMessage(support.prefixMessage("$worldName 不是世界，无法加载"))
             return false
         }
         return true

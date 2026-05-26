@@ -7,7 +7,6 @@ import com.mojang.brigadier.context.CommandContext
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import me.yin.simpleworld.command.support.CommandSupport
-import net.kyori.adventure.text.Component
 import org.bukkit.Location
 import org.bukkit.World
 import org.bukkit.command.CommandSender
@@ -32,9 +31,7 @@ class SetSpawnCommand(
         val location = player.location
         location.world.setSpawnLocation(location)
         player.sendMessage(
-            support.prefixMessage().append(
-                Component.text("已将世界 ${location.world.name} 的出生点设为当前位置")
-            )
+            support.prefixMessage("已将世界 ${location.world.name} 的出生点设为当前位置")
         )
         return 1
     }
@@ -44,16 +41,14 @@ class SetSpawnCommand(
         val worldName = StringArgumentType.getString(context, "world")
         val world = support.plugin.server.getWorld(worldName)
         if (world == null) {
-            sender.sendMessage(support.prefixMessage().append(Component.text("世界 $worldName 不存在")))
+            sender.sendMessage(support.prefixMessage("世界 $worldName 不存在"))
             return 0
         }
         val locationText = StringArgumentType.getString(context, "position")
         val location = resolveLocation(sender, world, locationText) ?: return 0
         world.setSpawnLocation(location)
         sender.sendMessage(
-            support.prefixMessage().append(
-                Component.text("已将世界 ${world.name} 的出生点设为 ${location.x}, ${location.y}, ${location.z}")
-            )
+            support.prefixMessage("已将世界 ${world.name} 的出生点设为 ${location.x}, ${location.y}, ${location.z}")
         )
         return 1
     }
@@ -62,14 +57,14 @@ class SetSpawnCommand(
         val parts = locationText.split(",").map { it.trim() }
         val size = parts.size
         if (size != 3 && size != 5) {
-            sender.sendMessage(support.prefixMessage().append(Component.text("坐标 $locationText 格式错误")))
+            sender.sendMessage(support.prefixMessage("坐标 $locationText 格式错误"))
             return null
         }
         val x = parts[0].toDoubleOrNull()
         val y = parts[1].toDoubleOrNull()
         val z = parts[2].toDoubleOrNull()
         if (x == null || y == null || z == null) {
-            sender.sendMessage(support.prefixMessage().append(Component.text("坐标解析错误")))
+            sender.sendMessage(support.prefixMessage("坐标解析错误"))
             return null
         }
         if (size == 3) {

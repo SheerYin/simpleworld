@@ -7,7 +7,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import me.yin.simpleworld.command.support.CommandSupport
 import me.yin.simpleworld.world.WorldManager
-import net.kyori.adventure.text.Component
 
 class ReloadCommand(
     private val support: CommandSupport,
@@ -19,19 +18,19 @@ class ReloadCommand(
             .requires { support.hasPermission(it, PERMISSION) }
             .executes { context ->
                 val sender = context.source.sender
-                sender.sendMessage(support.prefixMessage().append(Component.text("正在重新加载…")))
+                sender.sendMessage(support.prefixMessage("正在重新加载…"))
                 support.scope.launch {
                     try {
                         if (worldManager.tryLoad()) {
-                            sender.sendMessage(support.prefixMessage().append(Component.text("重新加载完成")))
+                            sender.sendMessage(support.prefixMessage("重新加载完成"))
                         } else {
-                            sender.sendMessage(support.prefixMessage().append(Component.text("已有保存或加载在进行中,请稍后再试")))
+                            sender.sendMessage(support.prefixMessage("已有保存或加载在进行中,请稍后再试"))
                         }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
                         support.logger.error("重新加载失败", e)
-                        sender.sendMessage(support.prefixMessage().append(Component.text("重新加载失败：${e.message}")))
+                        sender.sendMessage(support.prefixMessage("重新加载失败：${e.message}"))
                     }
                 }
                 return@executes 1
