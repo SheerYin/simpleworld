@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
+import me.yin.simpleworld.model.Position
 import me.yin.simpleworld.model.WorldSection
 import org.bukkit.Difficulty
 import org.bukkit.GameRule
@@ -161,14 +162,14 @@ class WorldManager(
         for (world in plugin.server.worlds) {
             val gameRulesMap = mutableMapOf<String, String>()
             for (rule in Registry.GAME_RULE) {
-                val value = world.getGameRuleValue(rule) ?: continue
+                val value = world.getGameRuleValue(rule)
                 if (value != rule.defaultValue) {
                     gameRulesMap[rule.key.asString()] = value.toString()
                 }
             }
 
             val spawnLocation = world.spawnLocation
-            val spawn = WorldSection.SpawnLocation(
+            val spawn = Position(
                 x = spawnLocation.x,
                 y = spawnLocation.y,
                 z = spawnLocation.z,
@@ -182,7 +183,6 @@ class WorldManager(
                 generator = chunkGenerators[world.name],
                 difficulty = world.difficulty.name,
                 spawn = spawn,
-                playerVersusPlayer = world.pvp,
                 gameRule = gameRulesMap,
             )
         }
@@ -208,9 +208,6 @@ class WorldManager(
             world.setSpawnLocation(
                 Location(world, spawn.x, spawn.y, spawn.z, spawn.yaw, spawn.pitch)
             )
-        }
-        if (section.playerVersusPlayer != null) {
-            world.pvp = section.playerVersusPlayer
         }
         for ((key, value) in section.gameRule) {
             val namespacedKey = NamespacedKey.fromString(key) ?: continue
