@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
@@ -18,6 +19,13 @@ class SimpleWorld : JavaPlugin() {
 
     var worldManager: WorldManager? = null
     var scope: CoroutineScope? = null
+
+    val isFolia: Boolean = try {
+        Class.forName("io.papermc.paper.threadedregions.RegionizedServer")
+        true
+    } catch (e: ClassNotFoundException) {
+        false
+    }
 
     override fun onEnable() {
         val logger = slF4JLogger
@@ -33,8 +41,10 @@ class SimpleWorld : JavaPlugin() {
         this.scope = scope
         this.worldManager = worldManager
 
-        runBlocking { worldManager.load() }
-        worldManager.startAutoSave()
+        scope.launch {
+            worldManager.load()
+            worldManager.startAutoSave()
+        }
 
         SimpleWorldCommand(this, logger, prefix, scope, worldManager).register()
 

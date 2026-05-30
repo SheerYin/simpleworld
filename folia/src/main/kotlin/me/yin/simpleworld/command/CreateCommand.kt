@@ -5,8 +5,9 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import me.yin.simpleworld.command.support.CommandSupport
+import me.yin.simpleworld.world.CreateWorldResult
 import me.yin.simpleworld.world.WorldManager
 import org.bukkit.World
 import org.bukkit.WorldType
@@ -30,11 +31,9 @@ class CreateCommand(
                     if (!precheck(sender, worldName)) return@executes 0
 
                     sender.sendMessage(support.prefixMessage("世界 $worldName 创建中…"))
-                    plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                    support.scope.launch {
                         try {
-                            worldManager.createWorld(worldName)
-                            runBlocking { worldManager.save() }
-                            sender.sendMessage(support.prefixMessage("世界 $worldName 创建完成"))
+                            handleResult(sender, worldName, worldManager.tryCreateWorld(worldName))
                         } catch (e: CancellationException) {
                             throw e
                         } catch (e: Exception) {
@@ -56,11 +55,9 @@ class CreateCommand(
                         val seed = StringArgumentType.getString(context, "seed").toLongOrNull()
 
                         sender.sendMessage(support.prefixMessage("世界 $worldName 创建中…"))
-                        plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                        support.scope.launch {
                             try {
-                                worldManager.createWorld(worldName, seed)
-                                runBlocking { worldManager.save() }
-                                sender.sendMessage(support.prefixMessage("世界 $worldName 创建完成"))
+                                handleResult(sender, worldName, worldManager.tryCreateWorld(worldName, seed))
                             } catch (e: CancellationException) {
                                 throw e
                             } catch (e: Exception) {
@@ -89,11 +86,9 @@ class CreateCommand(
                             val environment = World.Environment.valueOf(StringArgumentType.getString(context, "environment"))
 
                             sender.sendMessage(support.prefixMessage("世界 $worldName 创建中…"))
-                            plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                            support.scope.launch {
                                 try {
-                                    worldManager.createWorld(worldName, seed, environment)
-                                    runBlocking { worldManager.save() }
-                                    sender.sendMessage(support.prefixMessage("世界 $worldName 创建完成"))
+                                    handleResult(sender, worldName, worldManager.tryCreateWorld(worldName, seed, environment))
                                 } catch (e: CancellationException) {
                                     throw e
                                 } catch (e: Exception) {
@@ -123,11 +118,9 @@ class CreateCommand(
                                 val type = WorldType.valueOf(StringArgumentType.getString(context, "type"))
 
                                 sender.sendMessage(support.prefixMessage("世界 $worldName 创建中…"))
-                                plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                                support.scope.launch {
                                     try {
-                                        worldManager.createWorld(worldName, seed, environment, type)
-                                        runBlocking { worldManager.save() }
-                                        sender.sendMessage(support.prefixMessage("世界 $worldName 创建完成"))
+                                        handleResult(sender, worldName, worldManager.tryCreateWorld(worldName, seed, environment, type))
                                     } catch (e: CancellationException) {
                                         throw e
                                     } catch (e: Exception) {
@@ -148,11 +141,13 @@ class CreateCommand(
                                     val generator = StringArgumentType.getString(context, "chunk_generator")
 
                                     sender.sendMessage(support.prefixMessage("世界 $worldName 创建中…"))
-                                    plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                                    support.scope.launch {
                                         try {
-                                            worldManager.createWorld(worldName, seed, environment, type, generator)
-                                            runBlocking { worldManager.save() }
-                                            sender.sendMessage(support.prefixMessage("世界 $worldName 创建完成"))
+                                            handleResult(
+                                                sender,
+                                                worldName,
+                                                worldManager.tryCreateWorld(worldName, seed, environment, type, generator),
+                                            )
                                         } catch (e: CancellationException) {
                                             throw e
                                         } catch (e: Exception) {
@@ -169,9 +164,34 @@ class CreateCommand(
             )
     }
 
+    private suspend fun handleResult(sender: CommandSender, worldName: String, result: CreateWorldResult) {
+        when (result) {
+            is CreateWorldResult.Success -> {
+                worldManager.save()
+                sender.sendMessage(support.prefixMessage("世界 $worldName 创建完成"))
+            }
+            CreateWorldResult.AlreadyLoaded -> {
+                sender.sendMessage(support.prefixMessage("世界 $worldName 已经加载"))
+            }
+            CreateWorldResult.ExistsUnloaded -> {
+                sender.sendMessage(support.prefixMessage("世界 $worldName 已存在配置，请使用 load 加载"))
+            }
+            CreateWorldResult.Failed -> {
+                sender.sendMessage(support.prefixMessage("世界 $worldName 创建失败"))
+            }
+            CreateWorldResult.Busy -> {
+                sender.sendMessage(support.prefixMessage("已有世界操作或保存加载在进行中，请稍后再试"))
+            }
+        }
+    }
+
     private fun precheck(sender: CommandSender, worldName: String): Boolean {
         if (plugin.server.getWorld(worldName) != null) {
             sender.sendMessage(support.prefixMessage("世界 $worldName 已经加载"))
+            return false
+        }
+        if (worldManager.unloadedWorlds.containsKey(worldName)) {
+            sender.sendMessage(support.prefixMessage("世界 $worldName 已存在配置，请使用 load 加载"))
             return false
         }
         val path = plugin.server.worldContainer.toPath().resolve(worldName).resolve("level.dat")

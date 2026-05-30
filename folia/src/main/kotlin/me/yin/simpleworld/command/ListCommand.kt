@@ -50,7 +50,7 @@ class ListCommand(
             Component.text("所有世界 ").append(Component.text("（共 $count 个）", NamedTextColor.GRAY))
         )
 
-        val generators = worldManager.chunkGenerators
+        val generators = worldManager.generators
         val start = (page - 1) * pageSize
         val end = (start + pageSize).coerceAtMost(count)
         worlds.subList(start, end).forEach { world ->

@@ -7,11 +7,15 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
+import me.yin.simpleworld.SimpleWorld
 import me.yin.simpleworld.model.Position
 import me.yin.simpleworld.model.WorldSection
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import org.bukkit.Difficulty
 import org.bukkit.GameRule
 import org.bukkit.Location
@@ -20,7 +24,6 @@ import org.bukkit.Registry
 import org.bukkit.World
 import org.bukkit.WorldCreator
 import org.bukkit.WorldType
-import org.bukkit.plugin.java.JavaPlugin
 import org.slf4j.Logger
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -31,15 +34,45 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.path.exists
 import kotlin.time.Duration.Companion.minutes
 
+sealed interface CreateWorldResult {
+    data class Success(val world: World) : CreateWorldResult
+    data object AlreadyLoaded : CreateWorldResult
+    data object ExistsUnloaded : CreateWorldResult
+    data object Failed : CreateWorldResult
+    data object Busy : CreateWorldResult
+}
+
+sealed interface LoadWorldResult {
+    data class Success(val world: World) : LoadWorldResult
+    data object AlreadyLoaded : LoadWorldResult
+    data object Failed : LoadWorldResult
+    data object Busy : LoadWorldResult
+}
+
+sealed interface UnloadWorldResult {
+    data object Success : UnloadWorldResult
+    data object NotLoaded : UnloadWorldResult
+    data object Failed : UnloadWorldResult
+    data object Busy : UnloadWorldResult
+}
+
 class WorldManager(
-    private val plugin: JavaPlugin,
+    private val plugin: SimpleWorld,
     private val logger: Logger,
     private val json: Json,
     private val scope: CoroutineScope,
 ) {
 
+    // doSave 时名称匹配该正则的世界会被忽略；null 表示不忽略任何世界
     @Volatile
-    var chunkGenerators = ConcurrentHashMap<String, String>()
+    var ignoreWorldRegex: Regex? = null
+
+    @Volatile
+    var generators = ConcurrentHashMap<String, String>()
+        private set
+
+    @Volatile
+    var unloadedWorlds = ConcurrentHashMap<String, WorldSection>()
         private set
 
     private val path: Path = plugin.dataPath.resolve("world.json")
@@ -50,7 +83,7 @@ class WorldManager(
 
     suspend fun load() = mutex.withLock { doLoad() }
 
-    fun tryLoad(): Boolean {
+    suspend fun tryLoad(): Boolean {
         if (!mutex.tryLock()) return false
         try {
             doLoad()
@@ -62,7 +95,7 @@ class WorldManager(
 
     suspend fun save() = mutex.withLock { doSave() }
 
-    fun trySave(): Boolean {
+    suspend fun trySave(): Boolean {
         if (!mutex.tryLock()) return false
         try {
             doSave()
@@ -93,13 +126,56 @@ class WorldManager(
         }
     }
 
-    fun createWorld(
+    private fun recordGenerator(worldName: String, generator: String?) {
+        if (generator == null) {
+            generators.remove(worldName)
+        } else {
+            generators[worldName] = generator
+        }
+    }
+
+    suspend fun createWorld(
         name: String,
         seed: Long? = null,
         worldEnvironment: World.Environment = World.Environment.NORMAL,
         worldType: WorldType? = null,
         chunkGenerator: String? = null,
-    ): World? {
+    ): CreateWorldResult = mutex.withLock {
+        runGlobalRegion {
+            doCreateWorld(name, seed, worldEnvironment, worldType, chunkGenerator)
+        }
+    }
+
+    suspend fun tryCreateWorld(
+        name: String,
+        seed: Long? = null,
+        worldEnvironment: World.Environment = World.Environment.NORMAL,
+        worldType: WorldType? = null,
+        chunkGenerator: String? = null,
+    ): CreateWorldResult {
+        if (!mutex.tryLock()) return CreateWorldResult.Busy
+        try {
+            return runGlobalRegion {
+                doCreateWorld(name, seed, worldEnvironment, worldType, chunkGenerator)
+            }
+        } finally {
+            mutex.unlock()
+        }
+    }
+
+    private fun doCreateWorld(
+        name: String,
+        seed: Long? = null,
+        worldEnvironment: World.Environment = World.Environment.NORMAL,
+        worldType: WorldType? = null,
+        chunkGenerator: String? = null,
+    ): CreateWorldResult {
+        if (plugin.server.getWorld(name) != null) {
+            return CreateWorldResult.AlreadyLoaded
+        }
+        if (unloadedWorlds.containsKey(name)) {
+            return CreateWorldResult.ExistsUnloaded
+        }
         val worldCreator = WorldCreator(name)
         if (seed != null) {
             worldCreator.seed(seed)
@@ -112,96 +188,184 @@ class WorldManager(
             worldCreator.generator(chunkGenerator)
         }
         val world = worldCreator.createWorld()
-        if (world != null && chunkGenerator != null) {
-            chunkGenerators[name] = chunkGenerator
+        if (world != null) {
+            unloadedWorlds.remove(world.name)
+            recordGenerator(world.name, chunkGenerator)
         }
-        return world
+        if (world != null) {
+            return CreateWorldResult.Success(world)
+        } else {
+            return CreateWorldResult.Failed
+        }
     }
 
-    fun loadWorld(name: String, chunkGenerator: String? = null): World? {
+    suspend fun loadWorld(name: String, chunkGenerator: String? = null): LoadWorldResult = mutex.withLock {
+        runGlobalRegion {
+            doLoadWorld(name, chunkGenerator)
+        }
+    }
+
+    suspend fun tryLoadWorld(name: String, chunkGenerator: String? = null): LoadWorldResult {
+        if (!mutex.tryLock()) return LoadWorldResult.Busy
+        try {
+            return runGlobalRegion {
+                doLoadWorld(name, chunkGenerator)
+            }
+        } finally {
+            mutex.unlock()
+        }
+    }
+
+    private fun doLoadWorld(name: String, chunkGenerator: String? = null): LoadWorldResult {
+        if (plugin.server.getWorld(name) != null) {
+            return LoadWorldResult.AlreadyLoaded
+        }
         val worldCreator = WorldCreator(name)
         if (chunkGenerator != null) {
             worldCreator.generator(chunkGenerator)
         }
         val world = worldCreator.createWorld()
-        if (world != null && chunkGenerator != null) {
-            chunkGenerators[name] = chunkGenerator
+        if (world != null) {
+            unloadedWorlds.remove(world.name)
+            recordGenerator(world.name, chunkGenerator)
         }
-        return world
+        if (world != null) {
+            return LoadWorldResult.Success(world)
+        } else {
+            return LoadWorldResult.Failed
+        }
     }
 
-    fun unloadWorld(name: String): Boolean {
+    suspend fun unloadWorld(name: String): UnloadWorldResult = mutex.withLock {
+        runGlobalRegion {
+            doUnloadWorld(name)
+        }
+    }
+
+    suspend fun tryUnloadWorld(name: String): UnloadWorldResult {
+        if (!mutex.tryLock()) return UnloadWorldResult.Busy
+        try {
+            return runGlobalRegion {
+                doUnloadWorld(name)
+            }
+        } finally {
+            mutex.unlock()
+        }
+    }
+
+    private fun doUnloadWorld(name: String): UnloadWorldResult {
+        val world = plugin.server.getWorld(name)
+            ?: return UnloadWorldResult.NotLoaded
+        val section = sectionFromWorld(world, load = false)
         val success = plugin.server.unloadWorld(name, true)
         if (success) {
-            chunkGenerators.remove(name)
+            unloadedWorlds[name] = section
         }
-        return success
+        return if (success) {
+            UnloadWorldResult.Success
+        } else {
+            UnloadWorldResult.Failed
+        }
     }
 
-    private fun doLoad() {
+    private suspend fun <T> runGlobalRegion(block: () -> T): T {
+        return suspendCancellableCoroutine { continuation ->
+            val scheduledTask = plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                try {
+                    continuation.resume(block())
+                } catch (e: Throwable) {
+                    continuation.resumeWithException(e)
+                }
+            }
+            continuation.invokeOnCancellation { scheduledTask.cancel() }
+        }
+    }
+
+    private suspend fun doLoad() {
         val sections: Map<String, WorldSection> = if (!path.exists()) {
             emptyMap()
         } else {
             val text = Files.readString(path)
-            if (text.isBlank()) emptyMap() else json.decodeFromString(text)
-        }
-
-        val newGenerators = ConcurrentHashMap<String, String>()
-        for (world in plugin.server.worlds) {
-            val section = sections[world.name] ?: continue
-            applyConfig(world, section)
-            if (section.generator != null) {
-                newGenerators[world.name] = section.generator
+            if (text.isBlank()) {
+                emptyMap()
+            } else {
+                json.decodeFromString(text)
             }
         }
-        chunkGenerators = newGenerators
-    }
 
-    private fun doSave() {
-        val sections = mutableMapOf<String, WorldSection>()
-        for (world in plugin.server.worlds) {
-            val gameRulesMap = mutableMapOf<String, String>()
-            for (rule in Registry.GAME_RULE) {
-                val value = world.getGameRuleValue(rule)
-                if (value != rule.defaultValue) {
-                    gameRulesMap[rule.key.asString()] = value.toString()
+        suspendCancellableCoroutine { continuation ->
+            val scheduledTask = plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                try {
+                    val generatorMap = ConcurrentHashMap<String, String>()
+                    val unloadedWorldMap = ConcurrentHashMap<String, WorldSection>()
+                    for ((worldName, section) in sections) {
+                        val generator = section.generator
+                        if (generator != null) {
+                            generatorMap[worldName] = generator
+                        }
+
+                        // getWorld 已存在 -> 不写入 unloadedWorlds；load = true 时应用配置
+                        val existing = plugin.server.getWorld(worldName)
+                        if (existing != null) {
+                            if (section.load) {
+                                applyConfig(existing, section)
+                            }
+                            continue
+                        }
+
+                        // load = false：既不创建世界，也不应用配置；仅在未加载时保留完整配置
+                        if (!section.load) {
+                            unloadedWorldMap[worldName] = section
+                            continue
+                        }
+
+                        val world = if (plugin.isFolia) {
+                            null
+                        } else {
+                            val worldCreator = WorldCreator(worldName)
+                            val seed = section.seed
+                            if (seed != null) {
+                                worldCreator.seed(seed)
+                            }
+                            worldCreator.environment(
+                                if (section.environment.isNotEmpty()) {
+                                    World.Environment.valueOf(section.environment)
+                                } else {
+                                    World.Environment.NORMAL
+                                }
+                            )
+                            if (generator != null) {
+                                worldCreator.generator(generator)
+                            }
+                            val created = worldCreator.createWorld()
+                            if (created != null) {
+                                unloadedWorldMap.remove(created.name)
+                            }
+                            created
+                        }
+
+                        if (world != null) {
+                            applyConfig(world, section)
+                        } else {
+                            // 自动加载失败：保留完整配置，避免下一次保存丢失
+                            unloadedWorldMap[worldName] = section
+                        }
+                    }
+                    generators = generatorMap
+                    unloadedWorlds = unloadedWorldMap
+                    continuation.resume(Unit)
+                } catch (e: Throwable) {
+                    continuation.resumeWithException(e)
                 }
             }
-
-            val spawnLocation = world.spawnLocation
-            val spawn = Position(
-                x = spawnLocation.x,
-                y = spawnLocation.y,
-                z = spawnLocation.z,
-                yaw = spawnLocation.yaw,
-                pitch = spawnLocation.pitch,
-            )
-
-            sections[world.name] = WorldSection(
-                seed = world.seed,
-                environment = world.environment.name,
-                generator = chunkGenerators[world.name],
-                difficulty = world.difficulty.name,
-                spawn = spawn,
-                gameRule = gameRulesMap,
-            )
+            continuation.invokeOnCancellation { scheduledTask.cancel() }
         }
-        Files.createDirectories(path.parent)
-        val temporary = path.resolveSibling("${path.fileName}.temporary")
-        Files.writeString(
-            temporary,
-            json.encodeToString(sections),
-            StandardCharsets.UTF_8,
-            StandardOpenOption.CREATE,
-            StandardOpenOption.TRUNCATE_EXISTING,
-            StandardOpenOption.SYNC,
-        )
-        Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
     }
 
     private fun applyConfig(world: World, section: WorldSection) {
-        if (section.difficulty.isNotEmpty()) {
-            world.difficulty = Difficulty.valueOf(section.difficulty)
+        val difficulty = section.difficulty
+        if (difficulty != null) {
+            world.difficulty = Difficulty.valueOf(difficulty)
         }
         val spawn = section.spawn
         if (spawn != null) {
@@ -222,6 +386,77 @@ class WorldManager(
                 world.setGameRule(gameRule as GameRule<Boolean>, value.toBoolean())
             }
         }
+    }
+
+    private fun sectionFromWorld(world: World, load: Boolean): WorldSection {
+        val gameRulesMap = mutableMapOf<String, String>()
+        for (rule in Registry.GAME_RULE) {
+            val value = world.getGameRuleValue(rule)
+            if (value != rule.defaultValue) {
+                gameRulesMap[rule.key.asString()] = value.toString()
+            }
+        }
+
+        val spawnLocation = world.spawnLocation
+        val spawn = Position(
+            x = spawnLocation.x,
+            y = spawnLocation.y,
+            z = spawnLocation.z,
+            yaw = spawnLocation.yaw,
+            pitch = spawnLocation.pitch,
+        )
+
+        return WorldSection(
+            load = load,
+            seed = world.seed,
+            environment = world.environment.name,
+            generator = generators[world.name],
+            difficulty = world.difficulty.name,
+            spawn = spawn,
+            gameRule = gameRulesMap,
+        )
+    }
+
+    private suspend fun doSave() {
+        val sections = mutableMapOf<String, WorldSection>()
+
+        // 已加载世界从 World 取实时状态；未加载世界从 unloadedWorlds 保留完整配置
+        // （忽略匹配 ignoreWorldRegex 的世界）
+        suspendCancellableCoroutine<Unit> { continuation ->
+            val scheduledTask = plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                try {
+                    for (world in plugin.server.worlds) {
+                        val worldName = world.name
+                        if (ignoreWorldRegex?.matches(worldName) == true) continue
+
+                        sections[worldName] = sectionFromWorld(world, load = true)
+                    }
+
+                    for ((worldName, section) in unloadedWorlds) {
+                        if (ignoreWorldRegex?.matches(worldName) == true) continue
+                        if (plugin.server.getWorld(worldName) != null) continue
+
+                        sections[worldName] = section.copy(load = false)
+                    }
+                    continuation.resume(Unit)
+                } catch (e: Throwable) {
+                    continuation.resumeWithException(e)
+                }
+            }
+            continuation.invokeOnCancellation { scheduledTask.cancel() }
+        }
+
+        Files.createDirectories(path.parent)
+        val temporary = path.resolveSibling("${path.fileName}.temporary")
+        Files.writeString(
+            temporary,
+            json.encodeToString(sections),
+            StandardCharsets.UTF_8,
+            StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING,
+            StandardOpenOption.SYNC,
+        )
+        Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
     }
 
     companion object {

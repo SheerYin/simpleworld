@@ -5,8 +5,9 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import me.yin.simpleworld.command.support.CommandSupport
+import me.yin.simpleworld.world.LoadWorldResult
 import me.yin.simpleworld.world.WorldManager
 import org.bukkit.command.CommandSender
 import java.nio.file.Files
@@ -52,11 +53,9 @@ class LoadCommand(
                     if (!precheck(sender, worldName)) return@executes 0
 
                     sender.sendMessage(support.prefixMessage("世界 $worldName 加载中…"))
-                    plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                    support.scope.launch {
                         try {
-                            worldManager.loadWorld(worldName)
-                            runBlocking { worldManager.save() }
-                            sender.sendMessage(support.prefixMessage("世界 $worldName 加载完成"))
+                            handleResult(sender, worldName, worldManager.tryLoadWorld(worldName))
                         } catch (e: CancellationException) {
                             throw e
                         } catch (e: Exception) {
@@ -74,11 +73,9 @@ class LoadCommand(
                         val generator = StringArgumentType.getString(context, "chunk_generator")
 
                         sender.sendMessage(support.prefixMessage("世界 $worldName 加载中…"))
-                        plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                        support.scope.launch {
                             try {
-                                worldManager.loadWorld(worldName, generator)
-                                runBlocking { worldManager.save() }
-                                sender.sendMessage(support.prefixMessage("世界 $worldName 加载完成"))
+                                handleResult(sender, worldName, worldManager.tryLoadWorld(worldName, generator))
                             } catch (e: CancellationException) {
                                 throw e
                             } catch (e: Exception) {
@@ -90,6 +87,24 @@ class LoadCommand(
                     }
                 )
             )
+    }
+
+    private suspend fun handleResult(sender: CommandSender, worldName: String, result: LoadWorldResult) {
+        when (result) {
+            is LoadWorldResult.Success -> {
+                worldManager.save()
+                sender.sendMessage(support.prefixMessage("世界 $worldName 加载完成"))
+            }
+            LoadWorldResult.AlreadyLoaded -> {
+                sender.sendMessage(support.prefixMessage("世界 $worldName 已经加载"))
+            }
+            LoadWorldResult.Failed -> {
+                sender.sendMessage(support.prefixMessage("世界 $worldName 加载失败"))
+            }
+            LoadWorldResult.Busy -> {
+                sender.sendMessage(support.prefixMessage("已有世界操作或保存加载在进行中，请稍后再试"))
+            }
+        }
     }
 
     private fun precheck(sender: CommandSender, worldName: String): Boolean {
