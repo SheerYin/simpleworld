@@ -115,7 +115,8 @@ class ListCommand(
             .hoverEvent(HoverEvent.showText(Component.text("点击前往下一页", NamedTextColor.GRAY)))
             .clickEvent(ClickEvent.runCommand("/simpleworld list $nextPage"))
 
-        val footer = previousBtn
+        val footer = Component.empty()
+            .append(previousBtn)
             .append(Component.text(" [$page/$totalPages] "))
             .append(nextBtn)
         sender.sendMessage(footer)
