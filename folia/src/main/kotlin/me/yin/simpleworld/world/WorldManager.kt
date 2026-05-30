@@ -75,7 +75,7 @@ class WorldManager(
     var unloadedWorlds = ConcurrentHashMap<String, WorldSection>()
         private set
 
-    private val path: Path = plugin.dataPath.resolve("world.json")
+    private val path: Path = plugin.dataPath.resolve("worlds.json")
 
     private val mutex = Mutex()
 
@@ -391,7 +391,11 @@ class WorldManager(
     private fun sectionFromWorld(world: World, load: Boolean): WorldSection {
         val gameRulesMap = mutableMapOf<String, String>()
         for (rule in Registry.GAME_RULE) {
-            val value = world.getGameRuleValue(rule)
+            val value = try {
+                world.getGameRuleValue(rule)
+            } catch (_: IllegalArgumentException) {
+                continue
+            }
             if (value != rule.defaultValue) {
                 gameRulesMap[rule.key.asString()] = value.toString()
             }
@@ -422,28 +426,36 @@ class WorldManager(
 
         // 已加载世界从 World 取实时状态；未加载世界从 unloadedWorlds 保留完整配置
         // （忽略匹配 ignoreWorldRegex 的世界）
-        suspendCancellableCoroutine<Unit> { continuation ->
-            val scheduledTask = plugin.server.globalRegionScheduler.run(plugin) { _ ->
-                try {
-                    for (world in plugin.server.worlds) {
-                        val worldName = world.name
-                        if (ignoreWorldRegex?.matches(worldName) == true) continue
+        val collectSections = {
+            for (world in plugin.server.worlds) {
+                val worldName = world.name
+                if (ignoreWorldRegex?.matches(worldName) == true) continue
 
-                        sections[worldName] = sectionFromWorld(world, load = true)
-                    }
-
-                    for ((worldName, section) in unloadedWorlds) {
-                        if (ignoreWorldRegex?.matches(worldName) == true) continue
-                        if (plugin.server.getWorld(worldName) != null) continue
-
-                        sections[worldName] = section.copy(load = false)
-                    }
-                    continuation.resume(Unit)
-                } catch (e: Throwable) {
-                    continuation.resumeWithException(e)
-                }
+                sections[worldName] = sectionFromWorld(world, load = true)
             }
-            continuation.invokeOnCancellation { scheduledTask.cancel() }
+
+            for ((worldName, section) in unloadedWorlds) {
+                if (ignoreWorldRegex?.matches(worldName) == true) continue
+                if (plugin.server.getWorld(worldName) != null) continue
+
+                sections[worldName] = section.copy(load = false)
+            }
+        }
+
+        if (plugin.isEnabled) {
+            suspendCancellableCoroutine<Unit> { continuation ->
+                val scheduledTask = plugin.server.globalRegionScheduler.run(plugin) { _ ->
+                    try {
+                        collectSections()
+                        continuation.resume(Unit)
+                    } catch (e: Throwable) {
+                        continuation.resumeWithException(e)
+                    }
+                }
+                continuation.invokeOnCancellation { scheduledTask.cancel() }
+            }
+        } else {
+            collectSections()
         }
 
         Files.createDirectories(path.parent)
