@@ -23,7 +23,7 @@ class CreateCommand(
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("create")
-            .requires { support.hasPermission(it, PERMISSION) }
+            .requires { support.hasPermission(it, support.permissionCreate) }
             .then(Commands.argument("name", StringArgumentType.word())
                 .executes { context ->
                     val sender = context.source.sender
@@ -200,9 +200,5 @@ class CreateCommand(
             return false
         }
         return true
-    }
-
-    companion object {
-        const val PERMISSION = "simpleworld.command.create"
     }
 }

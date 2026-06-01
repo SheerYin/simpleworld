@@ -15,7 +15,7 @@ class SaveCommand(
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("save")
-            .requires { support.hasPermission(it, PERMISSION) }
+            .requires { support.hasPermission(it, support.permissionSave) }
             .executes { context ->
                 val sender = context.source.sender
                 sender.sendMessage(support.prefixMessage("正在保存…"))
@@ -35,9 +35,5 @@ class SaveCommand(
                 }
                 return@executes 1
             }
-    }
-
-    companion object {
-        const val PERMISSION = "simpleworld.command.save"
     }
 }

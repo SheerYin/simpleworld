@@ -18,6 +18,37 @@ class CommandSupport(
     val scope: CoroutineScope,
 ) {
 
+    // 各命令的权限节点（可在运行时调整）
+    @Volatile
+    var permissionRoot = "simpleworld.command"
+
+    @Volatile
+    var permissionReload = "simpleworld.command.reload"
+
+    @Volatile
+    var permissionSave = "simpleworld.command.save"
+
+    @Volatile
+    var permissionTeleport = "simpleworld.command.teleport"
+
+    @Volatile
+    var permissionTeleportTarget = "simpleworld.command.teleport.target"
+
+    @Volatile
+    var permissionSetSpawn = "simpleworld.command.setspawn"
+
+    @Volatile
+    var permissionList = "simpleworld.command.list"
+
+    @Volatile
+    var permissionCreate = "simpleworld.command.create"
+
+    @Volatile
+    var permissionLoad = "simpleworld.command.load"
+
+    @Volatile
+    var permissionUnload = "simpleworld.command.unload"
+
     fun prefixMessage(message: String = ""): Component {
         return Component.text("[$prefix] $message")
     }

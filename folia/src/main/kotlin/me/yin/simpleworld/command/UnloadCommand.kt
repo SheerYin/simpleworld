@@ -20,7 +20,7 @@ class UnloadCommand(
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("unload")
-            .requires { support.hasPermission(it, PERMISSION) }
+            .requires { support.hasPermission(it, support.permissionUnload) }
             .then(Commands.argument("name", StringArgumentType.word())
                 .suggests { _, builder ->
                     val remaining = builder.remainingLowerCase
@@ -68,9 +68,5 @@ class UnloadCommand(
                 sender.sendMessage(support.prefixMessage("已有世界操作或保存加载在进行中，请稍后再试"))
             }
         }
-    }
-
-    companion object {
-        const val PERMISSION = "simpleworld.command.unload"
     }
 }

@@ -17,7 +17,7 @@ class SetSpawnCommand(
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("setspawn")
-            .requires { support.hasPermission(it, PERMISSION) }
+            .requires { support.hasPermission(it, support.permissionSetSpawn) }
             .executes { context -> setFromPlayer(context) }
             .then(worldArgument()
                 .then(locationArgument()
@@ -100,9 +100,5 @@ class SetSpawnCommand(
                 }
                 builder.buildFuture()
             }
-    }
-
-    companion object {
-        const val PERMISSION = "simpleworld.command.setspawn"
     }
 }

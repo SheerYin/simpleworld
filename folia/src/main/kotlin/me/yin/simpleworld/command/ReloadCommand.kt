@@ -15,7 +15,7 @@ class ReloadCommand(
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("reload")
-            .requires { support.hasPermission(it, PERMISSION) }
+            .requires { support.hasPermission(it, support.permissionReload) }
             .executes { context ->
                 val sender = context.source.sender
                 sender.sendMessage(support.prefixMessage("正在重新加载…"))
@@ -35,9 +35,5 @@ class ReloadCommand(
                 }
                 return@executes 1
             }
-    }
-
-    companion object {
-        const val PERMISSION = "simpleworld.command.reload"
     }
 }

@@ -23,7 +23,7 @@ class LoadCommand(
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("load")
-            .requires { support.hasPermission(it, PERMISSION) }
+            .requires { support.hasPermission(it, support.permissionLoad) }
             .then(Commands.argument("name", StringArgumentType.word())
                 .suggests { _, builder ->
                     val remaining = builder.remainingLowerCase
@@ -118,9 +118,5 @@ class LoadCommand(
             return false
         }
         return true
-    }
-
-    companion object {
-        const val PERMISSION = "simpleworld.command.load"
     }
 }

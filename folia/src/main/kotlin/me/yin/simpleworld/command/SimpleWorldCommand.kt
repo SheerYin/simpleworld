@@ -20,7 +20,7 @@ class SimpleWorldCommand(
         plugin.lifecycleManager.registerEventHandler(LifecycleEvents.COMMANDS) { event ->
             val support = CommandSupport(plugin, logger, prefix, scope)
             val rootBuilder = Commands.literal(MAIN_COMMAND)
-                .requires { support.hasPermission(it, PERMISSION) }
+                .requires { support.hasPermission(it, support.permissionRoot) }
                 .then(ReloadCommand(support, worldManager).root())
                 .then(SaveCommand(support, worldManager).root())
                 .then(TeleportCommand(support).root())
@@ -41,7 +41,6 @@ class SimpleWorldCommand(
 
     companion object {
         const val MAIN_COMMAND = "simpleworld"
-        const val PERMISSION = "simpleworld.command"
         val COMMAND_ALIASES = listOf("sw")
     }
 }

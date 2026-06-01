@@ -18,7 +18,7 @@ class TeleportCommand(
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("teleport")
-            .requires { support.hasPermission(it, PERMISSION) }
+            .requires { support.hasPermission(it, support.permissionTeleport) }
             .then(support.playerNameArgument("target")
                 .then(worldArgument()
                     .executes { context -> handle(context, hasPosition = false) }
@@ -33,7 +33,7 @@ class TeleportCommand(
         val sender = context.source.sender
         val targetName = StringArgumentType.getString(context, "target")
         val target = support.resolveTarget(sender, targetName) ?: return 0
-        if (target != sender && !support.hasPermission(context.source, PERMISSION_TARGET)) {
+        if (target != sender && !support.hasPermission(context.source, support.permissionTeleportTarget)) {
             sender.sendMessage(support.prefixMessage("没有权限传送其他玩家"))
             return 0
         }
@@ -115,10 +115,5 @@ class TeleportCommand(
                 }
                 builder.buildFuture()
             }
-    }
-
-    companion object {
-        const val PERMISSION = "simpleworld.command.teleport"
-        const val PERMISSION_TARGET = "simpleworld.command.teleport.target"
     }
 }
