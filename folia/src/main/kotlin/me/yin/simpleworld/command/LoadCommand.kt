@@ -104,6 +104,9 @@ class LoadCommand(
             LoadWorldResult.Busy -> {
                 sender.sendMessage(support.prefixMessage("已有世界操作或保存加载在进行中，请稍后再试"))
             }
+            LoadWorldResult.Unsupported -> {
+                sender.sendMessage(support.prefixMessage("当前服务端（Folia）不支持加载世界"))
+            }
         }
     }
 

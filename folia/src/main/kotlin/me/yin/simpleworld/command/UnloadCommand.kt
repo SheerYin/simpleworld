@@ -64,6 +64,9 @@ class UnloadCommand(
             UnloadWorldResult.Failed -> {
                 sender.sendMessage(support.prefixMessage("世界 $worldName 卸载失败"))
             }
+            UnloadWorldResult.Unsupported -> {
+                sender.sendMessage(support.prefixMessage("当前服务端（Folia）不支持运行时卸载世界"))
+            }
             UnloadWorldResult.Busy -> {
                 sender.sendMessage(support.prefixMessage("已有世界操作或保存加载在进行中，请稍后再试"))
             }

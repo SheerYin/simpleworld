@@ -37,6 +37,9 @@ sealed interface CreateWorldResult {
     data object ExistsUnloaded : CreateWorldResult
     data object Failed : CreateWorldResult
     data object Busy : CreateWorldResult
+
+    // Folia 不支持运行时创建世界（WorldCreator.createWorld 抛 UnsupportedOperationException）
+    data object Unsupported : CreateWorldResult
 }
 
 sealed interface LoadWorldResult {
@@ -44,6 +47,9 @@ sealed interface LoadWorldResult {
     data object AlreadyLoaded : LoadWorldResult
     data object Failed : LoadWorldResult
     data object Busy : LoadWorldResult
+
+    // Folia 不支持运行时加载世界（WorldCreator.createWorld 抛 UnsupportedOperationException）
+    data object Unsupported : LoadWorldResult
 }
 
 sealed interface UnloadWorldResult {
@@ -51,6 +57,9 @@ sealed interface UnloadWorldResult {
     data object NotLoaded : UnloadWorldResult
     data object Failed : UnloadWorldResult
     data object Busy : UnloadWorldResult
+
+    // Folia 不支持运行时卸载世界（RegionizedServer 没有 removeWorld）
+    data object Unsupported : UnloadWorldResult
 }
 
 class WorldManager(
@@ -171,6 +180,10 @@ class WorldManager(
         worldType: WorldType? = null,
         chunkGenerator: String? = null,
     ): CreateWorldResult {
+        // Folia 上 WorldCreator.createWorld() 会抛 UnsupportedOperationException
+        if (plugin.isFolia) {
+            return CreateWorldResult.Unsupported
+        }
         if (plugin.server.getWorld(name) != null) {
             return CreateWorldResult.AlreadyLoaded
         }
@@ -218,6 +231,10 @@ class WorldManager(
     }
 
     private fun doLoadWorld(name: String, chunkGenerator: String? = null): LoadWorldResult {
+        // Folia 上 WorldCreator.createWorld() 会抛 UnsupportedOperationException
+        if (plugin.isFolia) {
+            return LoadWorldResult.Unsupported
+        }
         if (plugin.server.getWorld(name) != null) {
             return LoadWorldResult.AlreadyLoaded
         }
@@ -255,6 +272,11 @@ class WorldManager(
     }
 
     private fun doUnloadWorld(name: String): UnloadWorldResult {
+        // Folia 架构上不支持运行时卸载世界：RegionizedServer 没有 removeWorld，
+        // 世界绑定在区域 tick 线程上，CraftServer.unloadWorld 在 Folia 直接抛异常。
+        if (plugin.isFolia) {
+            return UnloadWorldResult.Unsupported
+        }
         val world = plugin.server.getWorld(name)
             ?: return UnloadWorldResult.NotLoaded
         val section = sectionFromWorld(world, load = false)

@@ -19,6 +19,8 @@ class SimpleWorldCommand(
     fun register() {
         plugin.lifecycleManager.registerEventHandler(LifecycleEvents.COMMANDS) { event ->
             val support = CommandSupport(plugin, logger, prefix, scope)
+            // create/load/unload 在 Folia 上一律注册：执行函数会返回 Unsupported，
+            // 由命令给出清晰的“不支持”提示，而不是让命令在 Folia 上凭空消失。
             val rootBuilder = Commands.literal(MAIN_COMMAND)
                 .requires { support.hasPermission(it, support.permissionRoot) }
                 .then(ReloadCommand(support, worldManager).root())
@@ -26,13 +28,9 @@ class SimpleWorldCommand(
                 .then(TeleportCommand(support).root())
                 .then(SetSpawnCommand(support).root())
                 .then(ListCommand(support, worldManager).root())
-
-            if (!plugin.isFolia) {
-                rootBuilder
-                    .then(CreateCommand(support, worldManager).root())
-                    .then(LoadCommand(support, worldManager).root())
-                    .then(UnloadCommand(support, worldManager).root())
-            }
+                .then(CreateCommand(support, worldManager).root())
+                .then(LoadCommand(support, worldManager).root())
+                .then(UnloadCommand(support, worldManager).root())
 
             val rootCommand = rootBuilder.build()
             event.registrar().register(rootCommand, "SimpleWorld commands", COMMAND_ALIASES)
