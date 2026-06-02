@@ -68,19 +68,19 @@ class SimpleWorld : JavaPlugin() {
 
         SimpleWorldCommand(this, logger, prefix, scope, worldManager).register()
 
-        logger.info("Enabled $prefix ${pluginMeta.version}")
+        logger.info("Enabled {} {}", prefix, pluginMeta.version)
     }
 
     override fun onDisable() {
         val prefix = pluginMeta.loggerPrefix ?: pluginMeta.name
-        slF4JLogger.info("Disabled $prefix ${pluginMeta.version}")
-        slF4JLogger.info("开始保存,最多等待 $shutdownTimeout")
+        slF4JLogger.info("Disabled {} {}", prefix, pluginMeta.version)
+        slF4JLogger.info("开始保存,最多等待 {}", shutdownTimeout)
         try {
             runBlocking {
                 withTimeout(shutdownTimeout) { worldManager?.shutdown() }
             }
         } catch (e: TimeoutCancellationException) {
-            slF4JLogger.error("shutdown 超时 $shutdownTimeout,放弃")
+            slF4JLogger.error("shutdown 超时 {},放弃", shutdownTimeout)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
