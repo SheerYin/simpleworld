@@ -31,6 +31,7 @@ class SimpleWorldCommand(
                 .then(CreateCommand(support, worldManager).root())
                 .then(LoadCommand(support, worldManager).root())
                 .then(UnloadCommand(support, worldManager).root())
+                .then(RemoveCommand(support, worldManager).root())
 
             val rootCommand = rootBuilder.build()
             event.registrar().register(rootCommand, "SimpleWorld commands", COMMAND_ALIASES)

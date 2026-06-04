@@ -62,6 +62,13 @@ sealed interface UnloadWorldResult {
     data object Unsupported : UnloadWorldResult
 }
 
+sealed interface RemoveWorldResult {
+    data object Success : RemoveWorldResult
+    data object Loaded : RemoveWorldResult
+    data object NotFound : RemoveWorldResult
+    data object Busy : RemoveWorldResult
+}
+
 class WorldManager(
     private val plugin: SimpleWorld,
     private val logger: Logger,
@@ -288,6 +295,27 @@ class WorldManager(
             UnloadWorldResult.Success
         } else {
             UnloadWorldResult.Failed
+        }
+    }
+
+    suspend fun tryRemoveWorld(name: String): RemoveWorldResult {
+        if (!mutex.tryLock()) return RemoveWorldResult.Busy
+        try {
+            val loaded = plugin.runGlobalRegion { plugin.server.getWorld(name) != null }
+            if (loaded) {
+                return RemoveWorldResult.Loaded
+            }
+
+            val removedSection = unloadedWorlds.remove(name) != null
+            val removedGenerator = generators.remove(name) != null
+            if (!removedSection && !removedGenerator) {
+                return RemoveWorldResult.NotFound
+            }
+
+            doSave()
+            return RemoveWorldResult.Success
+        } finally {
+            mutex.unlock()
         }
     }
 

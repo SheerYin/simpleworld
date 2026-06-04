@@ -49,6 +49,9 @@ class CommandSupport(
     @Volatile
     var permissionUnload = "simpleworld.command.unload"
 
+    @Volatile
+    var permissionRemove = "simpleworld.command.remove"
+
     fun prefixMessage(message: String = ""): Component {
         return Component.text("[$prefix] $message")
     }
