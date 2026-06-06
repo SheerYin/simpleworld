@@ -27,7 +27,7 @@ class LoadCommand(
             .requires { support.hasPermission(it, support.permissionLoad) }
             .then(Commands.argument("name", StringArgumentType.string())
                 .suggests { _, builder ->
-                    val remaining = builder.remainingLowerCase.trim('"')
+                    val remaining = builder.remainingLowerCase
                     CompletableFuture.supplyAsync {
                         val keys = mutableSetOf<NamespacedKey>()
                         val minecraft = plugin.server.levelDirectory.resolve("dimensions").resolve(NamespacedKey.MINECRAFT)

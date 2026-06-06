@@ -95,7 +95,7 @@ class TeleportCommand(
     private fun worldArgument(): RequiredArgumentBuilder<CommandSourceStack, String> {
         return Commands.argument("world", StringArgumentType.string())
             .suggests { _, builder ->
-                val remaining = builder.remainingLowerCase.trim('"')
+                val remaining = builder.remainingLowerCase
                 for (world in support.plugin.server.worlds) {
                     val key = world.key.toString()
                     if (remaining.isEmpty() || key.startsWith(remaining, true)) {

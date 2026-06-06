@@ -22,7 +22,7 @@ class RemoveCommand(
             .requires { support.hasPermission(it, support.permissionRemove) }
             .then(Commands.argument("name", StringArgumentType.string())
                 .suggests { _, builder ->
-                    val remaining = builder.remainingLowerCase.trim('"')
+                    val remaining = builder.remainingLowerCase
                     val keys = worldManager.unloadedWorlds.keys.map { it.toString() }.sorted()
                     for (key in keys) {
                         if (remaining.isEmpty() || key.startsWith(remaining, true)) {

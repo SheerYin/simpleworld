@@ -24,7 +24,7 @@ class UnloadCommand(
             .requires { support.hasPermission(it, support.permissionUnload) }
             .then(Commands.argument("name", StringArgumentType.string())
                 .suggests { _, builder ->
-                    val remaining = builder.remainingLowerCase.trim('"')
+                    val remaining = builder.remainingLowerCase
                     for (world in plugin.server.worlds) {
                         val key = world.key.toString()
                         if (remaining.isEmpty() || key.startsWith(remaining, true)) {
