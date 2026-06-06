@@ -36,6 +36,7 @@ class LoadCommand(
                                 dimensionPaths
                                     .filter { it.isDirectory() }
                                     .map { NamespacedKey.minecraft(it.fileName.toString()) }
+                                    .filter { plugin.server.getWorld(it) == null }
                                     .forEach { keys += it }
                             }
                         }
