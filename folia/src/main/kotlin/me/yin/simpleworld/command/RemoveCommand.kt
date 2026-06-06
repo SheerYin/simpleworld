@@ -25,7 +25,7 @@ class RemoveCommand(
                     val remaining = builder.remainingLowerCase
                     val keys = worldManager.unloadedWorlds.keys.map { it.toString() }.sorted()
                     for (key in keys) {
-                        if (remaining.isEmpty() || key.startsWith(remaining, true)) {
+                        if (key.contains(remaining, true)) {
                             builder.suggest("\"$key\"")
                         }
                     }

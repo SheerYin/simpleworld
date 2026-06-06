@@ -27,7 +27,7 @@ class UnloadCommand(
                     val remaining = builder.remainingLowerCase
                     for (world in plugin.server.worlds) {
                         val key = world.key.toString()
-                        if (remaining.isEmpty() || key.startsWith(remaining, true)) {
+                        if (key.contains(remaining, true)) {
                             builder.suggest("\"$key\"")
                         }
                     }

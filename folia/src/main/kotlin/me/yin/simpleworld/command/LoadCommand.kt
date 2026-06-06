@@ -41,7 +41,7 @@ class LoadCommand(
                             }
                         }
                         for (key in keys.map { it.toString() }.sorted()) {
-                            if (remaining.isEmpty() || key.startsWith(remaining, true)) {
+                            if (key.contains(remaining, true)) {
                                 builder.suggest("\"$key\"")
                             }
                         }

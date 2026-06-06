@@ -83,7 +83,7 @@ class SetSpawnCommand(
                 val remaining = builder.remainingLowerCase
                 for (world in support.plugin.server.worlds) {
                     val key = world.key.toString()
-                    if (remaining.isEmpty() || key.startsWith(remaining, true)) {
+                    if (key.contains(remaining, true)) {
                         builder.suggest("\"$key\"")
                     }
                 }
