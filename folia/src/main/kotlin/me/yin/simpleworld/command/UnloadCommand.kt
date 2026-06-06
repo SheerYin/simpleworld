@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import me.yin.simpleworld.command.support.CommandSupport
 import me.yin.simpleworld.world.UnloadWorldResult
 import me.yin.simpleworld.world.WorldManager
+import org.bukkit.NamespacedKey
 import org.bukkit.command.CommandSender
 
 class UnloadCommand(
@@ -21,48 +22,53 @@ class UnloadCommand(
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("unload")
             .requires { support.hasPermission(it, support.permissionUnload) }
-            .then(Commands.argument("name", StringArgumentType.word())
+            .then(Commands.argument("name", StringArgumentType.string())
                 .suggests { _, builder ->
-                    val remaining = builder.remainingLowerCase
+                    val remaining = builder.remainingLowerCase.trim('"')
                     for (world in plugin.server.worlds) {
-                        val name = world.name
-                        if (remaining.isEmpty() || name.startsWith(remaining, true)) {
-                            builder.suggest(name)
+                        val key = world.key.toString()
+                        if (remaining.isEmpty() || key.startsWith(remaining, true)) {
+                            builder.suggest("\"$key\"")
                         }
                     }
                     builder.buildFuture()
                 }
                 .executes { context ->
                     val sender = context.source.sender
-                    val worldName = StringArgumentType.getString(context, "name")
+                    val worldKeyText = StringArgumentType.getString(context, "name")
+                    val worldKey = NamespacedKey.fromString(worldKeyText)
+                    if (worldKey == null) {
+                        sender.sendMessage(support.prefixMessage("世界 $worldKeyText 不是合法 key"))
+                        return@executes 0
+                    }
 
-                    sender.sendMessage(support.prefixMessage("世界 $worldName 卸载中…"))
+                    sender.sendMessage(support.prefixMessage("世界 $worldKey 卸载中…"))
                     support.scope.launch {
                         try {
-                            handleResult(sender, worldName, worldManager.tryUnloadWorld(worldName))
+                            handleResult(sender, worldKey, worldManager.tryUnloadWorld(worldKey))
                         } catch (e: CancellationException) {
                             throw e
                         } catch (e: Exception) {
                             support.logger.error("卸载失败", e)
-                            sender.sendMessage(support.prefixMessage("世界 $worldName 卸载失败：${e.message}"))
+                            sender.sendMessage(support.prefixMessage("世界 $worldKey 卸载失败：${e.message}"))
                         }
                     }
                     return@executes 1
                 }
-            )
+        )
     }
 
-    private suspend fun handleResult(sender: CommandSender, worldName: String, result: UnloadWorldResult) {
+    private suspend fun handleResult(sender: CommandSender, worldKey: NamespacedKey, result: UnloadWorldResult) {
         when (result) {
             UnloadWorldResult.Success -> {
                 worldManager.save()
-                sender.sendMessage(support.prefixMessage("世界 $worldName 卸载完成"))
+                sender.sendMessage(support.prefixMessage("世界 $worldKey 卸载完成"))
             }
             UnloadWorldResult.NotLoaded -> {
-                sender.sendMessage(support.prefixMessage("世界 $worldName 未加载"))
+                sender.sendMessage(support.prefixMessage("世界 $worldKey 未加载"))
             }
             UnloadWorldResult.Failed -> {
-                sender.sendMessage(support.prefixMessage("世界 $worldName 卸载失败"))
+                sender.sendMessage(support.prefixMessage("世界 $worldKey 卸载失败"))
             }
             UnloadWorldResult.Unsupported -> {
                 sender.sendMessage(support.prefixMessage("当前服务端（Folia）不支持运行时卸载世界"))

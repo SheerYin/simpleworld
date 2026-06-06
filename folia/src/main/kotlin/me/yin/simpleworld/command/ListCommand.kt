@@ -11,6 +11,7 @@ import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.event.ClickEvent
 import net.kyori.adventure.text.event.HoverEvent
 import net.kyori.adventure.text.format.NamedTextColor
+import org.bukkit.NamespacedKey
 import org.bukkit.World
 import org.bukkit.command.CommandSender
 
@@ -35,17 +36,17 @@ class ListCommand(
     }
 
     private fun handle(sender: CommandSender, page: Int = 1, pageSize: Int = 10) {
-        val loadedWorlds = support.plugin.server.worlds.associateBy { it.name }
+        val loadedWorlds = support.plugin.server.worlds.associateBy { it.key }
         val entries = (loadedWorlds.keys + worldManager.unloadedWorlds.keys)
             .toSet()
-            .sorted()
-            .mapNotNull { name ->
-                val world = loadedWorlds[name]
+            .sortedBy { it.toString() }
+            .mapNotNull { key ->
+                val world = loadedWorlds[key]
                 if (world != null) {
                     WorldListEntry.Loaded(world)
                 } else {
-                    val section = worldManager.unloadedWorlds[name] ?: return@mapNotNull null
-                    WorldListEntry.Unloaded(name, section)
+                    val section = worldManager.unloadedWorlds[key] ?: return@mapNotNull null
+                    WorldListEntry.Unloaded(key, section)
                 }
             }
         val count = entries.size
@@ -72,33 +73,38 @@ class ListCommand(
                 is WorldListEntry.Loaded -> {
                     val world = entry.world
                     val name = world.name
+                    val key = world.key.toString()
                     val seed = world.seed
                     @Suppress("DEPRECATION")
-                    val type = world.worldType?.name ?: "Default | Unknown"
-                    val generator = generators[name] ?: "Default | Unknown"
+                    val bukkitWorldType = world.worldType?.name ?: "Default | Unknown"
+                    val generator = generators[world.key] ?: "Default | Unknown"
                     val difficulty = world.difficulty.name
-                    val environment = world.environment.name
+                    val environment = world.environment.takeIf { it != World.Environment.CUSTOM }?.name ?: "Default | Unknown"
 
-                    val hover = Component.text("种子: $seed\n环境: $environment\n类型: $type\n生成器: $generator\n难度: $difficulty")
+                    val hover = Component.text("名称: $name\n种子: $seed\n环境: $environment\n维度: $key\nBukkit类型: $bukkitWorldType\n生成器: $generator\n难度: $difficulty")
                     val worldPart = Component.text(" - ")
-                        .append(Component.text(name).hoverEvent(HoverEvent.showText(hover)))
+                        .append(Component.text(key).hoverEvent(HoverEvent.showText(hover)))
                     val teleportPart = Component.text(" [传送]", NamedTextColor.GREEN)
                         .hoverEvent(HoverEvent.showText(Component.text("点击传送", NamedTextColor.GRAY)))
-                        .clickEvent(ClickEvent.runCommand("/simpleworld teleport ${sender.name} $name"))
+                        .clickEvent(ClickEvent.runCommand("/simpleworld teleport ${sender.name} \"$key\""))
 
                     sender.sendMessage(worldPart.append(teleportPart))
                 }
                 is WorldListEntry.Unloaded -> {
-                    val name = entry.name
+                    val key = entry.key
+                    val keyText = key.toString()
                     val section = entry.section
+                    val name = section.name ?: "Default | Unknown"
                     val seed = section.seed?.toString() ?: "Default | Unknown"
                     val generator = section.generator ?: "Default | Unknown"
                     val difficulty = section.difficulty ?: "Default | Unknown"
+                    val environment = section.environment ?: "Default | Unknown"
+                    val bukkitWorldType = section.bukkitWorldType ?: "Default | Unknown"
                     val hover = Component.text(
-                        "种子: $seed\n环境: ${section.environment}\n生成器: $generator\n难度: $difficulty\n状态: 未加载"
+                        "名称: $name\n种子: $seed\n环境: $environment\n维度: $keyText\nBukkit类型: $bukkitWorldType\n生成器: $generator\n难度: $difficulty\n状态: 未加载"
                     )
                     val worldPart = Component.text(" - ")
-                        .append(Component.text(name, NamedTextColor.RED).hoverEvent(HoverEvent.showText(hover)))
+                        .append(Component.text(keyText, NamedTextColor.RED).hoverEvent(HoverEvent.showText(hover)))
 
                     sender.sendMessage(worldPart)
                 }
@@ -124,6 +130,6 @@ class ListCommand(
 
     private sealed interface WorldListEntry {
         data class Loaded(val world: World) : WorldListEntry
-        data class Unloaded(val name: String, val section: WorldSection) : WorldListEntry
+        data class Unloaded(val key: NamespacedKey, val section: WorldSection) : WorldListEntry
     }
 }

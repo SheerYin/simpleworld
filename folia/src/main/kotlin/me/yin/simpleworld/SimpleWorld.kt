@@ -33,11 +33,16 @@ class SimpleWorld : JavaPlugin() {
     @Volatile
     var shutdownTimeout = 10.seconds
 
-    val isFolia: Boolean = try {
-        Class.forName("io.papermc.paper.threadedregions.RegionizedServer")
-        true
-    } catch (e: ClassNotFoundException) {
-        false
+    val isFolia: Boolean = listOf(
+        "io.papermc.paper.threadedregions.RegionizedServer",
+        "io.papermc.paper.threadedregions.scheduler.FoliaGlobalRegionScheduler",
+    ).any { className ->
+        try {
+            Class.forName(className)
+            true
+        } catch (e: ClassNotFoundException) {
+            false
+        }
     }
 
     override fun onEnable() {

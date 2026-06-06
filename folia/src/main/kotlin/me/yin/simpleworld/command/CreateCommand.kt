@@ -9,10 +9,11 @@ import kotlinx.coroutines.launch
 import me.yin.simpleworld.command.support.CommandSupport
 import me.yin.simpleworld.world.CreateWorldResult
 import me.yin.simpleworld.world.WorldManager
+import org.bukkit.NamespacedKey
 import org.bukkit.World
 import org.bukkit.WorldType
 import org.bukkit.command.CommandSender
-import java.nio.file.Files
+import kotlin.io.path.isDirectory
 
 class CreateCommand(
     private val support: CommandSupport,
@@ -21,24 +22,26 @@ class CreateCommand(
 
     private val plugin = support.plugin
 
+    private val creatableEnvironments = World.Environment.entries.filter { it != World.Environment.CUSTOM }
+
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("create")
             .requires { support.hasPermission(it, support.permissionCreate) }
-            .then(Commands.argument("name", StringArgumentType.word())
+            .then(Commands.argument("name", StringArgumentType.string())
                 .executes { context ->
                     val sender = context.source.sender
-                    val worldName = StringArgumentType.getString(context, "name")
-                    if (!precheck(sender, worldName)) return@executes 0
+                    val worldKey = precheck(sender, StringArgumentType.getString(context, "name"))
+                        ?: return@executes 0
 
-                    sender.sendMessage(support.prefixMessage("世界 $worldName 创建中…"))
+                    sender.sendMessage(support.prefixMessage("世界 $worldKey 创建中…"))
                     support.scope.launch {
                         try {
-                            handleResult(sender, worldName, worldManager.tryCreateWorld(worldName))
+                            handleResult(sender, worldKey, worldManager.tryCreateWorld(worldKey))
                         } catch (e: CancellationException) {
                             throw e
                         } catch (e: Exception) {
                             support.logger.error("创建失败", e)
-                            sender.sendMessage(support.prefixMessage("世界 $worldName 创建失败：${e.message}"))
+                            sender.sendMessage(support.prefixMessage("世界 $worldKey 创建失败：${e.message}"))
                         }
                     }
                     return@executes 1
@@ -50,19 +53,19 @@ class CreateCommand(
                     }
                     .executes { context ->
                         val sender = context.source.sender
-                        val worldName = StringArgumentType.getString(context, "name")
-                        if (!precheck(sender, worldName)) return@executes 0
+                        val worldKey = precheck(sender, StringArgumentType.getString(context, "name"))
+                            ?: return@executes 0
                         val seed = StringArgumentType.getString(context, "seed").toLongOrNull()
 
-                        sender.sendMessage(support.prefixMessage("世界 $worldName 创建中…"))
+                        sender.sendMessage(support.prefixMessage("世界 $worldKey 创建中…"))
                         support.scope.launch {
                             try {
-                                handleResult(sender, worldName, worldManager.tryCreateWorld(worldName, seed))
+                                handleResult(sender, worldKey, worldManager.tryCreateWorld(worldKey, seed))
                             } catch (e: CancellationException) {
                                 throw e
                             } catch (e: Exception) {
                                 support.logger.error("创建失败", e)
-                                sender.sendMessage(support.prefixMessage("世界 $worldName 创建失败：${e.message}"))
+                                sender.sendMessage(support.prefixMessage("世界 $worldKey 创建失败：${e.message}"))
                             }
                         }
                         return@executes 1
@@ -70,7 +73,7 @@ class CreateCommand(
                     .then(Commands.argument("environment", StringArgumentType.word())
                         .suggests { _, builder ->
                             val remaining = builder.remainingLowerCase
-                            for (environment in World.Environment.entries) {
+                            for (environment in creatableEnvironments) {
                                 val name = environment.name
                                 if (remaining.isEmpty() || name.startsWith(remaining, true)) {
                                     builder.suggest(name)
@@ -80,20 +83,21 @@ class CreateCommand(
                         }
                         .executes { context ->
                             val sender = context.source.sender
-                            val worldName = StringArgumentType.getString(context, "name")
-                            if (!precheck(sender, worldName)) return@executes 0
+                            val worldKey = precheck(sender, StringArgumentType.getString(context, "name"))
+                                ?: return@executes 0
                             val seed = StringArgumentType.getString(context, "seed").toLongOrNull()
-                            val environment = World.Environment.valueOf(StringArgumentType.getString(context, "environment"))
+                            val environment = parseEnvironment(sender, StringArgumentType.getString(context, "environment"))
+                                ?: return@executes 0
 
-                            sender.sendMessage(support.prefixMessage("世界 $worldName 创建中…"))
+                            sender.sendMessage(support.prefixMessage("世界 $worldKey 创建中…"))
                             support.scope.launch {
                                 try {
-                                    handleResult(sender, worldName, worldManager.tryCreateWorld(worldName, seed, environment))
+                                    handleResult(sender, worldKey, worldManager.tryCreateWorld(worldKey, seed, environment))
                                 } catch (e: CancellationException) {
                                     throw e
                                 } catch (e: Exception) {
                                     support.logger.error("创建失败", e)
-                                    sender.sendMessage(support.prefixMessage("世界 $worldName 创建失败：${e.message}"))
+                                    sender.sendMessage(support.prefixMessage("世界 $worldKey 创建失败：${e.message}"))
                                 }
                             }
                             return@executes 1
@@ -111,21 +115,22 @@ class CreateCommand(
                             }
                             .executes { context ->
                                 val sender = context.source.sender
-                                val worldName = StringArgumentType.getString(context, "name")
-                                if (!precheck(sender, worldName)) return@executes 0
+                                val worldKey = precheck(sender, StringArgumentType.getString(context, "name"))
+                                    ?: return@executes 0
                                 val seed = StringArgumentType.getString(context, "seed").toLongOrNull()
-                                val environment = World.Environment.valueOf(StringArgumentType.getString(context, "environment"))
+                                val environment = parseEnvironment(sender, StringArgumentType.getString(context, "environment"))
+                                    ?: return@executes 0
                                 val type = WorldType.valueOf(StringArgumentType.getString(context, "type"))
 
-                                sender.sendMessage(support.prefixMessage("世界 $worldName 创建中…"))
+                                sender.sendMessage(support.prefixMessage("世界 $worldKey 创建中…"))
                                 support.scope.launch {
                                     try {
-                                        handleResult(sender, worldName, worldManager.tryCreateWorld(worldName, seed, environment, type))
+                                        handleResult(sender, worldKey, worldManager.tryCreateWorld(worldKey, seed, environment, type))
                                     } catch (e: CancellationException) {
                                         throw e
                                     } catch (e: Exception) {
                                         support.logger.error("创建失败", e)
-                                        sender.sendMessage(support.prefixMessage("世界 $worldName 创建失败：${e.message}"))
+                                        sender.sendMessage(support.prefixMessage("世界 $worldKey 创建失败：${e.message}"))
                                     }
                                 }
                                 return@executes 1
@@ -133,26 +138,27 @@ class CreateCommand(
                             .then(Commands.argument("chunk_generator", StringArgumentType.string())
                                 .executes { context ->
                                     val sender = context.source.sender
-                                    val worldName = StringArgumentType.getString(context, "name")
-                                    if (!precheck(sender, worldName)) return@executes 0
+                                    val worldKey = precheck(sender, StringArgumentType.getString(context, "name"))
+                                        ?: return@executes 0
                                     val seed = StringArgumentType.getString(context, "seed").toLongOrNull()
-                                    val environment = World.Environment.valueOf(StringArgumentType.getString(context, "environment"))
+                                    val environment = parseEnvironment(sender, StringArgumentType.getString(context, "environment"))
+                                        ?: return@executes 0
                                     val type = WorldType.valueOf(StringArgumentType.getString(context, "type"))
                                     val generator = StringArgumentType.getString(context, "chunk_generator")
 
-                                    sender.sendMessage(support.prefixMessage("世界 $worldName 创建中…"))
+                                    sender.sendMessage(support.prefixMessage("世界 $worldKey 创建中…"))
                                     support.scope.launch {
                                         try {
                                             handleResult(
                                                 sender,
-                                                worldName,
-                                                worldManager.tryCreateWorld(worldName, seed, environment, type, generator),
+                                                worldKey,
+                                                worldManager.tryCreateWorld(worldKey, seed, environment, type, generator),
                                             )
                                         } catch (e: CancellationException) {
                                             throw e
                                         } catch (e: Exception) {
                                             support.logger.error("创建失败", e)
-                                            sender.sendMessage(support.prefixMessage("世界 $worldName 创建失败：${e.message}"))
+                                            sender.sendMessage(support.prefixMessage("世界 $worldKey 创建失败：${e.message}"))
                                         }
                                     }
                                     return@executes 1
@@ -161,23 +167,23 @@ class CreateCommand(
                         )
                     )
                 )
-            )
+        )
     }
 
-    private suspend fun handleResult(sender: CommandSender, worldName: String, result: CreateWorldResult) {
+    private suspend fun handleResult(sender: CommandSender, worldKey: NamespacedKey, result: CreateWorldResult) {
         when (result) {
             is CreateWorldResult.Success -> {
                 worldManager.save()
-                sender.sendMessage(support.prefixMessage("世界 $worldName 创建完成"))
+                sender.sendMessage(support.prefixMessage("世界 $worldKey 创建完成"))
             }
             CreateWorldResult.AlreadyLoaded -> {
-                sender.sendMessage(support.prefixMessage("世界 $worldName 已经加载"))
+                sender.sendMessage(support.prefixMessage("世界 $worldKey 已经加载"))
             }
             CreateWorldResult.ExistsUnloaded -> {
-                sender.sendMessage(support.prefixMessage("世界 $worldName 已存在配置，请使用 load 加载"))
+                sender.sendMessage(support.prefixMessage("世界 $worldKey 已存在配置，请使用 load 加载"))
             }
             CreateWorldResult.Failed -> {
-                sender.sendMessage(support.prefixMessage("世界 $worldName 创建失败"))
+                sender.sendMessage(support.prefixMessage("世界 $worldKey 创建失败"))
             }
             CreateWorldResult.Busy -> {
                 sender.sendMessage(support.prefixMessage("已有世界操作或保存加载在进行中，请稍后再试"))
@@ -188,20 +194,33 @@ class CreateCommand(
         }
     }
 
-    private fun precheck(sender: CommandSender, worldName: String): Boolean {
-        if (plugin.server.getWorld(worldName) != null) {
-            sender.sendMessage(support.prefixMessage("世界 $worldName 已经加载"))
-            return false
+    private fun parseEnvironment(sender: CommandSender, name: String): World.Environment? {
+        val environment = runCatching { World.Environment.valueOf(name) }.getOrNull()
+        if (environment == null || environment == World.Environment.CUSTOM) {
+            sender.sendMessage(support.prefixMessage("环境 $name 不能用于创建世界"))
+            return null
         }
-        if (worldManager.unloadedWorlds.containsKey(worldName)) {
-            sender.sendMessage(support.prefixMessage("世界 $worldName 已存在配置，请使用 load 加载"))
-            return false
+        return environment
+    }
+
+    private fun precheck(sender: CommandSender, worldKey: String): NamespacedKey? {
+        val key = NamespacedKey.fromString(worldKey)
+        if (key == null) {
+            sender.sendMessage(support.prefixMessage("世界 $worldKey 不是合法 key"))
+            return null
         }
-        val path = plugin.server.worldContainer.toPath().resolve(worldName).resolve("level.dat")
-        if (Files.exists(path)) {
-            sender.sendMessage(support.prefixMessage("世界 $worldName 存在磁盘"))
-            return false
+        if (plugin.server.getWorld(key) != null) {
+            sender.sendMessage(support.prefixMessage("世界 $key 已经加载"))
+            return null
         }
-        return true
+        if (worldManager.unloadedWorlds.containsKey(key)) {
+            sender.sendMessage(support.prefixMessage("世界 $key 已存在配置，请使用 load 加载"))
+            return null
+        }
+        if (plugin.server.levelDirectory.resolve("dimensions").resolve(key.namespace).resolve(key.key).isDirectory()) {
+            sender.sendMessage(support.prefixMessage("世界 $key 存在磁盘"))
+            return null
+        }
+        return key
     }
 }

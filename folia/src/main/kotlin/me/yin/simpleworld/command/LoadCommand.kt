@@ -9,10 +9,11 @@ import kotlinx.coroutines.launch
 import me.yin.simpleworld.command.support.CommandSupport
 import me.yin.simpleworld.world.LoadWorldResult
 import me.yin.simpleworld.world.WorldManager
+import org.bukkit.NamespacedKey
 import org.bukkit.command.CommandSender
 import java.nio.file.Files
 import java.util.concurrent.CompletableFuture
-import kotlin.io.path.name
+import kotlin.io.path.isDirectory
 
 class LoadCommand(
     private val support: CommandSupport,
@@ -24,43 +25,42 @@ class LoadCommand(
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("load")
             .requires { support.hasPermission(it, support.permissionLoad) }
-            .then(Commands.argument("name", StringArgumentType.word())
+            .then(Commands.argument("name", StringArgumentType.string())
                 .suggests { _, builder ->
-                    val remaining = builder.remainingLowerCase
-                    val worldContainer = plugin.server.worldContainer.toPath()
-                    val loaded = plugin.server.worlds.map { it.name }.toSet()
-
+                    val remaining = builder.remainingLowerCase.trim('"')
                     CompletableFuture.supplyAsync {
-                        try {
-                            Files.list(worldContainer).use { stream ->
-                                stream
-                                    .filter { Files.isDirectory(it) }
-                                    .filter { Files.exists(it.resolve("level.dat")) }
-                                    .map { it.name }
-                                    .filter { it !in loaded }
-                                    .filter { it.startsWith(remaining, true) }
-                                    .forEach { builder.suggest(it) }
+                        val keys = mutableSetOf<NamespacedKey>()
+                        val minecraft = plugin.server.levelDirectory.resolve("dimensions").resolve(NamespacedKey.MINECRAFT)
+                        if (minecraft.isDirectory()) {
+                            Files.list(minecraft).use { dimensionPaths ->
+                                dimensionPaths
+                                    .filter { it.isDirectory() }
+                                    .map { NamespacedKey.minecraft(it.fileName.toString()) }
+                                    .forEach { keys += it }
                             }
-                        } catch (e: Exception) {
-                            support.logger.warn("列出世界目录失败", e)
+                        }
+                        for (key in keys.map { it.toString() }.sorted()) {
+                            if (remaining.isEmpty() || key.startsWith(remaining, true)) {
+                                builder.suggest("\"$key\"")
+                            }
                         }
                         builder.build()
                     }
                 }
                 .executes { context ->
                     val sender = context.source.sender
-                    val worldName = StringArgumentType.getString(context, "name")
-                    if (!precheck(sender, worldName)) return@executes 0
+                    val worldKey = precheck(sender, StringArgumentType.getString(context, "name"))
+                        ?: return@executes 0
 
-                    sender.sendMessage(support.prefixMessage("世界 $worldName 加载中…"))
+                    sender.sendMessage(support.prefixMessage("世界 $worldKey 加载中…"))
                     support.scope.launch {
                         try {
-                            handleResult(sender, worldName, worldManager.tryLoadWorld(worldName))
+                            handleResult(sender, worldKey, worldManager.tryLoadWorld(worldKey))
                         } catch (e: CancellationException) {
                             throw e
                         } catch (e: Exception) {
                             support.logger.error("加载失败", e)
-                            sender.sendMessage(support.prefixMessage("世界 $worldName 加载失败：${e.message}"))
+                            sender.sendMessage(support.prefixMessage("世界 $worldKey 加载失败：${e.message}"))
                         }
                     }
                     return@executes 1
@@ -68,38 +68,38 @@ class LoadCommand(
                 .then(Commands.argument("chunk_generator", StringArgumentType.string())
                     .executes { context ->
                         val sender = context.source.sender
-                        val worldName = StringArgumentType.getString(context, "name")
-                        if (!precheck(sender, worldName)) return@executes 0
+                        val worldKey = precheck(sender, StringArgumentType.getString(context, "name"))
+                            ?: return@executes 0
                         val generator = StringArgumentType.getString(context, "chunk_generator")
 
-                        sender.sendMessage(support.prefixMessage("世界 $worldName 加载中…"))
+                        sender.sendMessage(support.prefixMessage("世界 $worldKey 加载中…"))
                         support.scope.launch {
                             try {
-                                handleResult(sender, worldName, worldManager.tryLoadWorld(worldName, generator))
+                                handleResult(sender, worldKey, worldManager.tryLoadWorld(worldKey, generator))
                             } catch (e: CancellationException) {
                                 throw e
                             } catch (e: Exception) {
                                 support.logger.error("加载失败", e)
-                                sender.sendMessage(support.prefixMessage("世界 $worldName 加载失败：${e.message}"))
+                                sender.sendMessage(support.prefixMessage("世界 $worldKey 加载失败：${e.message}"))
                             }
                         }
                         return@executes 1
                     }
                 )
-            )
+        )
     }
 
-    private suspend fun handleResult(sender: CommandSender, worldName: String, result: LoadWorldResult) {
+    private suspend fun handleResult(sender: CommandSender, worldKey: NamespacedKey, result: LoadWorldResult) {
         when (result) {
             is LoadWorldResult.Success -> {
                 worldManager.save()
-                sender.sendMessage(support.prefixMessage("世界 $worldName 加载完成"))
+                sender.sendMessage(support.prefixMessage("世界 $worldKey 加载完成"))
             }
             LoadWorldResult.AlreadyLoaded -> {
-                sender.sendMessage(support.prefixMessage("世界 $worldName 已经加载"))
+                sender.sendMessage(support.prefixMessage("世界 $worldKey 已经加载"))
             }
             LoadWorldResult.Failed -> {
-                sender.sendMessage(support.prefixMessage("世界 $worldName 加载失败"))
+                sender.sendMessage(support.prefixMessage("世界 $worldKey 加载失败"))
             }
             LoadWorldResult.Busy -> {
                 sender.sendMessage(support.prefixMessage("已有世界操作或保存加载在进行中，请稍后再试"))
@@ -110,16 +110,24 @@ class LoadCommand(
         }
     }
 
-    private fun precheck(sender: CommandSender, worldName: String): Boolean {
-        if (plugin.server.getWorld(worldName) != null) {
-            sender.sendMessage(support.prefixMessage("世界 $worldName 已经加载"))
-            return false
+    private fun precheck(sender: CommandSender, worldKey: String): NamespacedKey? {
+        val key = NamespacedKey.fromString(worldKey)
+        if (key == null) {
+            sender.sendMessage(support.prefixMessage("世界 $worldKey 不是合法 key"))
+            return null
         }
-        val path = plugin.server.worldContainer.toPath().resolve(worldName).resolve("level.dat")
-        if (Files.notExists(path)) {
-            sender.sendMessage(support.prefixMessage("$worldName 不是世界，无法加载"))
-            return false
+        if (plugin.server.getWorld(key) != null) {
+            sender.sendMessage(support.prefixMessage("世界 $key 已经加载"))
+            return null
         }
-        return true
+        if (key.namespace != NamespacedKey.MINECRAFT) {
+            sender.sendMessage(support.prefixMessage("只支持加载 minecraft 命名空间世界：$key"))
+            return null
+        }
+        if (!plugin.server.levelDirectory.resolve("dimensions").resolve(NamespacedKey.MINECRAFT).resolve(key.key).isDirectory()) {
+            sender.sendMessage(support.prefixMessage("没有找到世界 $key 的磁盘数据"))
+            return null
+        }
+        return key
     }
 }

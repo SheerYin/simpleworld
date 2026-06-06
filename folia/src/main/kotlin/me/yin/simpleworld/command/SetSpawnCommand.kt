@@ -8,6 +8,7 @@ import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import me.yin.simpleworld.command.support.CommandSupport
 import org.bukkit.Location
+import org.bukkit.NamespacedKey
 import org.bukkit.World
 import org.bukkit.command.CommandSender
 
@@ -31,24 +32,25 @@ class SetSpawnCommand(
         val location = player.location
         location.world.setSpawnLocation(location)
         player.sendMessage(
-            support.prefixMessage("已将世界 ${location.world.name} 的出生点设为当前位置")
+            support.prefixMessage("已将世界 ${location.world.key} 的出生点设为当前位置")
         )
         return 1
     }
 
     private fun setFromArgument(context: CommandContext<CommandSourceStack>): Int {
         val sender = context.source.sender
-        val worldName = StringArgumentType.getString(context, "world")
-        val world = support.plugin.server.getWorld(worldName)
+        val worldKey = StringArgumentType.getString(context, "world")
+        val key = NamespacedKey.fromString(worldKey)
+        val world = if (key == null) null else support.plugin.server.getWorld(key)
         if (world == null) {
-            sender.sendMessage(support.prefixMessage("世界 $worldName 不存在"))
+            sender.sendMessage(support.prefixMessage("世界 $worldKey 不存在"))
             return 0
         }
         val locationText = StringArgumentType.getString(context, "position")
         val location = resolveLocation(sender, world, locationText) ?: return 0
         world.setSpawnLocation(location)
         sender.sendMessage(
-            support.prefixMessage("已将世界 ${world.name} 的出生点设为 ${location.x}, ${location.y}, ${location.z}")
+            support.prefixMessage("已将世界 ${world.key} 的出生点设为 ${location.x}, ${location.y}, ${location.z}")
         )
         return 1
     }
@@ -76,13 +78,13 @@ class SetSpawnCommand(
     }
 
     private fun worldArgument(): RequiredArgumentBuilder<CommandSourceStack, String> {
-        return Commands.argument("world", StringArgumentType.word())
+        return Commands.argument("world", StringArgumentType.string())
             .suggests { _, builder ->
-                val remaining = builder.remainingLowerCase
+                val remaining = builder.remainingLowerCase.trim('"')
                 for (world in support.plugin.server.worlds) {
-                    val name = world.name
-                    if (remaining.isEmpty() || name.startsWith(remaining, true)) {
-                        builder.suggest(name)
+                    val key = world.key.toString()
+                    if (remaining.isEmpty() || key.startsWith(remaining, true)) {
+                        builder.suggest("\"$key\"")
                     }
                 }
                 builder.buildFuture()
@@ -92,8 +94,9 @@ class SetSpawnCommand(
     private fun locationArgument(): RequiredArgumentBuilder<CommandSourceStack, String> {
         return Commands.argument("position", StringArgumentType.string())
             .suggests { context, builder ->
-                val worldName = StringArgumentType.getString(context, "world")
-                val world = support.plugin.server.getWorld(worldName)
+                val worldKey = StringArgumentType.getString(context, "world")
+                val key = NamespacedKey.fromString(worldKey)
+                val world = if (key == null) null else support.plugin.server.getWorld(key)
                 if (world != null) {
                     val l = world.spawnLocation
                     builder.suggest("\"${l.x},${l.y},${l.z},${l.yaw},${l.pitch}\"")
