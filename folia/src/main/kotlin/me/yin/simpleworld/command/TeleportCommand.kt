@@ -49,7 +49,7 @@ class TeleportCommand(
         hasPosition: Boolean,
     ): Location? {
         val worldKey = StringArgumentType.getString(context, "world")
-        val key = NamespacedKey.fromString(worldKey)
+        val key = runCatching { NamespacedKey.fromString(worldKey) }.getOrNull()
         val world = if (key == null) null else support.plugin.server.getWorld(key)
         if (world == null) {
             sender.sendMessage(support.prefixMessage("世界 $worldKey 不存在"))
@@ -110,7 +110,7 @@ class TeleportCommand(
         return Commands.argument("position", StringArgumentType.string())
             .suggests { context, builder ->
                 val worldKey = StringArgumentType.getString(context, "world")
-                val key = NamespacedKey.fromString(worldKey)
+                val key = runCatching { NamespacedKey.fromString(worldKey) }.getOrNull()
                 val world = if (key == null) null else support.plugin.server.getWorld(key)
                 if (world != null) {
                     val l = world.spawnLocation

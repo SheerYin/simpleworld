@@ -18,7 +18,7 @@ object NamespacedKeySerializer : KSerializer<NamespacedKey> {
 
     override fun deserialize(decoder: Decoder): NamespacedKey {
         val value = decoder.decodeString()
-        return NamespacedKey.fromString(value)
+        return runCatching { NamespacedKey.fromString(value) }.getOrNull()
             ?: throw SerializationException("Invalid NamespacedKey: $value")
     }
 }

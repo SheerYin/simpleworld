@@ -34,7 +34,7 @@ class RemoveCommand(
                 .executes { context ->
                     val sender = context.source.sender
                     val worldKeyText = StringArgumentType.getString(context, "name")
-                    val worldKey = NamespacedKey.fromString(worldKeyText)
+                    val worldKey = runCatching { NamespacedKey.fromString(worldKeyText) }.getOrNull()
                     if (worldKey == null) {
                         sender.sendMessage(support.prefixMessage("世界 $worldKeyText 不是合法 key"))
                         return@executes 0

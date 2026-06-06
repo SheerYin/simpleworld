@@ -204,7 +204,7 @@ class CreateCommand(
     }
 
     private fun precheck(sender: CommandSender, worldKey: String): NamespacedKey? {
-        val key = NamespacedKey.fromString(worldKey)
+        val key = runCatching { NamespacedKey.fromString(worldKey) }.getOrNull()
         if (key == null) {
             sender.sendMessage(support.prefixMessage("世界 $worldKey 不是合法 key"))
             return null
