@@ -27,7 +27,7 @@ class CreateCommand(
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("create")
             .requires { support.hasPermission(it, support.permissionCreate) }
-            .then(Commands.argument("name", StringArgumentType.string())
+            .then(Commands.argument("name", StringArgumentType.word())
                 .executes { context ->
                     val sender = context.source.sender
                     val worldKey = precheck(sender, StringArgumentType.getString(context, "name"))
@@ -203,10 +203,10 @@ class CreateCommand(
         return environment
     }
 
-    private fun precheck(sender: CommandSender, worldKey: String): NamespacedKey? {
-        val key = runCatching { NamespacedKey.fromString(worldKey) }.getOrNull()
+    private fun precheck(sender: CommandSender, worldName: String): NamespacedKey? {
+        val key = runCatching { NamespacedKey.minecraft(worldName) }.getOrNull()
         if (key == null) {
-            sender.sendMessage(support.prefixMessage("世界 $worldKey 不是合法 key"))
+            sender.sendMessage(support.prefixMessage("世界 $worldName 不是合法名称"))
             return null
         }
         if (plugin.server.getWorld(key) != null) {

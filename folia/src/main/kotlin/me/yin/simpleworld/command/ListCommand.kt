@@ -5,7 +5,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import me.yin.simpleworld.command.support.CommandSupport
-import me.yin.simpleworld.model.WorldSection
+import me.yin.simpleworld.model.WorldConfiguration
 import me.yin.simpleworld.world.WorldManager
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.event.ClickEvent
@@ -45,8 +45,8 @@ class ListCommand(
                 if (world != null) {
                     WorldListEntry.Loaded(world)
                 } else {
-                    val section = worldManager.unloadedWorlds[key] ?: return@mapNotNull null
-                    WorldListEntry.Unloaded(key, section)
+                    val configuration = worldManager.unloadedWorlds[key] ?: return@mapNotNull null
+                    WorldListEntry.Unloaded(key, configuration)
                 }
             }
         val count = entries.size
@@ -65,7 +65,7 @@ class ListCommand(
             Component.text("所有世界 ").append(Component.text("（共 $count 个）", NamedTextColor.GRAY))
         )
 
-        val generators = worldManager.generators
+        val loadedGenerators = worldManager.loadedGenerators
         val start = (page - 1) * pageSize
         val end = (start + pageSize).coerceAtMost(count)
         entries.subList(start, end).forEach { entry ->
@@ -77,7 +77,7 @@ class ListCommand(
                     val seed = world.seed
                     @Suppress("DEPRECATION")
                     val bukkitWorldType = world.worldType?.name ?: "Default | Unknown"
-                    val generator = generators[world.key] ?: "Default | Unknown"
+                    val generator = loadedGenerators[world.key] ?: "Default | Unknown"
                     val difficulty = world.difficulty.name
                     val environment = world.environment.takeIf { it != World.Environment.CUSTOM }?.name ?: "Default | Unknown"
 
@@ -93,13 +93,13 @@ class ListCommand(
                 is WorldListEntry.Unloaded -> {
                     val key = entry.key
                     val keyText = key.toString()
-                    val section = entry.section
-                    val name = section.name ?: "Default | Unknown"
-                    val seed = section.seed?.toString() ?: "Default | Unknown"
-                    val generator = section.generator ?: "Default | Unknown"
-                    val difficulty = section.difficulty ?: "Default | Unknown"
-                    val environment = section.environment ?: "Default | Unknown"
-                    val bukkitWorldType = section.bukkitWorldType ?: "Default | Unknown"
+                    val configuration = entry.configuration
+                    val name = configuration.displayName ?: "Default | Unknown"
+                    val seed = configuration.seed?.toString() ?: "Default | Unknown"
+                    val generator = configuration.generator ?: "Default | Unknown"
+                    val difficulty = configuration.difficulty ?: "Default | Unknown"
+                    val environment = configuration.environment ?: "Default | Unknown"
+                    val bukkitWorldType = configuration.bukkitWorldType ?: "Default | Unknown"
                     val hover = Component.text(
                         "名称: $name\n种子: $seed\n环境: $environment\n维度: $keyText\nBukkit类型: $bukkitWorldType\n生成器: $generator\n难度: $difficulty\n状态: 未加载"
                     )
@@ -130,6 +130,6 @@ class ListCommand(
 
     private sealed interface WorldListEntry {
         data class Loaded(val world: World) : WorldListEntry
-        data class Unloaded(val key: NamespacedKey, val section: WorldSection) : WorldListEntry
+        data class Unloaded(val key: NamespacedKey, val configuration: WorldConfiguration) : WorldListEntry
     }
 }

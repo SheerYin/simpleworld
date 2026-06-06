@@ -7,6 +7,7 @@ import com.mojang.brigadier.context.CommandContext
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import me.yin.simpleworld.command.support.CommandSupport
+import me.yin.simpleworld.command.support.PositionSupport
 import org.bukkit.Location
 import org.bukkit.NamespacedKey
 import org.bukkit.World
@@ -63,25 +64,11 @@ class TeleportCommand(
     }
 
     private fun parsePosition(sender: CommandSender, world: World, positionText: String): Location? {
-        val parts = positionText.split(",").map { it.trim() }
-        val size = parts.size
-        if (size != 3 && size != 5) {
+        val location = PositionSupport.parseLocation(world, positionText)
+        if (location == null) {
             sender.sendMessage(support.prefixMessage("坐标 $positionText 格式错误"))
-            return null
         }
-        val x = parts[0].toDoubleOrNull()
-        val y = parts[1].toDoubleOrNull()
-        val z = parts[2].toDoubleOrNull()
-        if (x == null || y == null || z == null) {
-            sender.sendMessage(support.prefixMessage("坐标解析错误"))
-            return null
-        }
-        if (size == 3) {
-            return Location(world, x, y, z, 0f, 0f)
-        }
-        val yaw = parts[3].toFloatOrNull() ?: 0f
-        val pitch = parts[4].toFloatOrNull() ?: 0f
-        return Location(world, x, y, z, yaw, pitch)
+        return location
     }
 
     private fun teleport(player: Player, location: Location) {
@@ -113,8 +100,8 @@ class TeleportCommand(
                 val key = runCatching { NamespacedKey.fromString(worldKey) }.getOrNull()
                 val world = if (key == null) null else support.plugin.server.getWorld(key)
                 if (world != null) {
-                    val l = world.spawnLocation
-                    builder.suggest("\"${l.x},${l.y},${l.z},${l.yaw},${l.pitch}\"")
+                    val location = world.spawnLocation
+                    builder.suggest("\"${location.x},${location.y},${location.z},${location.yaw},${location.pitch}\"")
                 }
                 builder.buildFuture()
             }

@@ -7,6 +7,7 @@ import com.mojang.brigadier.context.CommandContext
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import me.yin.simpleworld.command.support.CommandSupport
+import me.yin.simpleworld.command.support.PositionSupport
 import org.bukkit.Location
 import org.bukkit.NamespacedKey
 import org.bukkit.World
@@ -21,7 +22,7 @@ class SetSpawnCommand(
             .requires { support.hasPermission(it, support.permissionSetSpawn) }
             .executes { context -> setFromPlayer(context) }
             .then(worldArgument()
-                .then(locationArgument()
+                .then(positionArgument()
                     .executes { context -> setFromArgument(context) }
                 )
             )
@@ -30,7 +31,9 @@ class SetSpawnCommand(
     private fun setFromPlayer(context: CommandContext<CommandSourceStack>): Int {
         val player = support.requirePlayer(context.source.sender) ?: return 0
         val location = player.location
-        location.world.setSpawnLocation(location)
+        support.plugin.server.globalRegionScheduler.run(support.plugin) {
+            location.world.setSpawnLocation(location)
+        }
         player.sendMessage(
             support.prefixMessage("已将世界 ${location.world.key} 的出生点设为当前位置")
         )
@@ -39,42 +42,34 @@ class SetSpawnCommand(
 
     private fun setFromArgument(context: CommandContext<CommandSourceStack>): Int {
         val sender = context.source.sender
-        val worldKey = StringArgumentType.getString(context, "world")
-        val key = runCatching { NamespacedKey.fromString(worldKey) }.getOrNull()
-        val world = if (key == null) null else support.plugin.server.getWorld(key)
-        if (world == null) {
-            sender.sendMessage(support.prefixMessage("世界 $worldKey 不存在"))
-            return 0
-        }
+        val world = resolveWorld(sender, context) ?: return 0
         val locationText = StringArgumentType.getString(context, "position")
-        val location = resolveLocation(sender, world, locationText) ?: return 0
-        world.setSpawnLocation(location)
+        val location = parsePosition(sender, world, locationText) ?: return 0
+        support.plugin.server.globalRegionScheduler.run(support.plugin) {
+            world.setSpawnLocation(location)
+        }
         sender.sendMessage(
             support.prefixMessage("已将世界 ${world.key} 的出生点设为 ${location.x}, ${location.y}, ${location.z}")
         )
         return 1
     }
 
-    private fun resolveLocation(sender: CommandSender, world: World, locationText: String): Location? {
-        val parts = locationText.split(",").map { it.trim() }
-        val size = parts.size
-        if (size != 3 && size != 5) {
-            sender.sendMessage(support.prefixMessage("坐标 $locationText 格式错误"))
-            return null
+    private fun resolveWorld(sender: CommandSender, context: CommandContext<CommandSourceStack>): World? {
+        val worldKey = StringArgumentType.getString(context, "world")
+        val key = runCatching { NamespacedKey.fromString(worldKey) }.getOrNull()
+        val world = if (key == null) null else support.plugin.server.getWorld(key)
+        if (world == null) {
+            sender.sendMessage(support.prefixMessage("世界 $worldKey 不存在"))
         }
-        val x = parts[0].toDoubleOrNull()
-        val y = parts[1].toDoubleOrNull()
-        val z = parts[2].toDoubleOrNull()
-        if (x == null || y == null || z == null) {
-            sender.sendMessage(support.prefixMessage("坐标解析错误"))
-            return null
+        return world
+    }
+
+    private fun parsePosition(sender: CommandSender, world: World, positionText: String): Location? {
+        val location = PositionSupport.parseLocation(world, positionText)
+        if (location == null) {
+            sender.sendMessage(support.prefixMessage("坐标 $positionText 格式错误"))
         }
-        if (size == 3) {
-            return Location(world, x, y, z, 0f, 0f)
-        }
-        val yaw = parts[3].toFloatOrNull() ?: 0f
-        val pitch = parts[4].toFloatOrNull() ?: 0f
-        return Location(world, x, y, z, yaw, pitch)
+        return location
     }
 
     private fun worldArgument(): RequiredArgumentBuilder<CommandSourceStack, String> {
@@ -91,15 +86,15 @@ class SetSpawnCommand(
             }
     }
 
-    private fun locationArgument(): RequiredArgumentBuilder<CommandSourceStack, String> {
+    private fun positionArgument(): RequiredArgumentBuilder<CommandSourceStack, String> {
         return Commands.argument("position", StringArgumentType.string())
             .suggests { context, builder ->
                 val worldKey = StringArgumentType.getString(context, "world")
                 val key = runCatching { NamespacedKey.fromString(worldKey) }.getOrNull()
                 val world = if (key == null) null else support.plugin.server.getWorld(key)
                 if (world != null) {
-                    val l = world.spawnLocation
-                    builder.suggest("\"${l.x},${l.y},${l.z},${l.yaw},${l.pitch}\"")
+                    val location = world.spawnLocation
+                    builder.suggest("\"${location.x},${location.y},${location.z},${location.yaw},${location.pitch}\"")
                 }
                 builder.buildFuture()
             }
