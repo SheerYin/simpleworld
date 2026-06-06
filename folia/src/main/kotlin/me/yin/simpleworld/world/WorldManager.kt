@@ -154,7 +154,7 @@ class WorldManager(
         worldType: WorldType? = null,
         chunkGenerator: String? = null,
     ): CreateWorldResult = mutex.withLock {
-        plugin.runGlobalRegion {
+        plugin.runGlobalRegionAndWait {
             doCreateWorld(key, seed, worldEnvironment, worldType, chunkGenerator)
         }
     }
@@ -168,7 +168,7 @@ class WorldManager(
     ): CreateWorldResult {
         if (!mutex.tryLock()) return CreateWorldResult.Busy
         try {
-            return plugin.runGlobalRegion {
+            return plugin.runGlobalRegionAndWait {
                 doCreateWorld(key, seed, worldEnvironment, worldType, chunkGenerator)
             }
         } finally {
@@ -225,7 +225,7 @@ class WorldManager(
     }
 
     suspend fun loadWorld(key: NamespacedKey, chunkGenerator: String? = null): LoadWorldResult = mutex.withLock {
-        plugin.runGlobalRegion {
+        plugin.runGlobalRegionAndWait {
             doLoadWorld(key, chunkGenerator)
         }
     }
@@ -233,7 +233,7 @@ class WorldManager(
     suspend fun tryLoadWorld(key: NamespacedKey, chunkGenerator: String? = null): LoadWorldResult {
         if (!mutex.tryLock()) return LoadWorldResult.Busy
         try {
-            return plugin.runGlobalRegion {
+            return plugin.runGlobalRegionAndWait {
                 doLoadWorld(key, chunkGenerator)
             }
         } finally {
@@ -306,7 +306,7 @@ class WorldManager(
     }
 
     suspend fun unloadWorld(key: NamespacedKey): UnloadWorldResult = mutex.withLock {
-        plugin.runGlobalRegion {
+        plugin.runGlobalRegionAndWait {
             doUnloadWorld(key)
         }
     }
@@ -314,7 +314,7 @@ class WorldManager(
     suspend fun tryUnloadWorld(key: NamespacedKey): UnloadWorldResult {
         if (!mutex.tryLock()) return UnloadWorldResult.Busy
         try {
-            return plugin.runGlobalRegion {
+            return plugin.runGlobalRegionAndWait {
                 doUnloadWorld(key)
             }
         } finally {
@@ -345,7 +345,7 @@ class WorldManager(
     suspend fun tryRemoveWorld(key: NamespacedKey): RemoveWorldResult {
         if (!mutex.tryLock()) return RemoveWorldResult.Busy
         try {
-            val loaded = plugin.runGlobalRegion { plugin.server.getWorld(key) != null }
+            val loaded = plugin.runGlobalRegionAndWait { plugin.server.getWorld(key) != null }
             if (loaded) {
                 return RemoveWorldResult.Loaded
             }
@@ -375,7 +375,7 @@ class WorldManager(
             }
         }
 
-        plugin.runGlobalRegion {
+        plugin.runGlobalRegionAndWait {
             val generatorMap = ConcurrentHashMap<NamespacedKey, String>()
             val unloadedWorldMap = ConcurrentHashMap<NamespacedKey, WorldSection>()
             for ((worldKey, section) in sections) {
@@ -514,7 +514,7 @@ class WorldManager(
 
         // 已加载世界从 World 取实时状态；未加载世界从 unloadedWorlds 保留完整配置
         // （忽略匹配 ignoreWorldRegex 的世界）
-        plugin.runGlobalRegion {
+        plugin.runGlobalRegionAndWait {
             for (world in plugin.server.worlds) {
                 val key = world.key
                 if (ignoreWorldRegex?.matches(key.toString()) == true) continue

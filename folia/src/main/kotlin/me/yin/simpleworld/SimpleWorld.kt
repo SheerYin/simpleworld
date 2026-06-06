@@ -14,6 +14,7 @@ import kotlinx.serialization.json.Json
 import me.yin.simpleworld.command.SimpleWorldCommand
 import me.yin.simpleworld.listener.AllListener
 import me.yin.simpleworld.world.WorldManager
+import org.bukkit.World
 import org.bukkit.plugin.java.JavaPlugin
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -28,6 +29,9 @@ class SimpleWorld : JavaPlugin() {
     @Volatile
     var ready = false
         private set
+
+    @Volatile
+    private var worldConfigLoaded = false
 
     // onDisable 时等待保存完成的最长时间
     @Volatile
@@ -63,11 +67,22 @@ class SimpleWorld : JavaPlugin() {
 
         scope.launch {
             try {
+                ready = false
+                worldConfigLoaded = false
                 worldManager.load()
+                worldConfigLoaded = true
                 worldManager.startAutoSave()
-            } finally {
-                // 无论加载成功与否都放行，避免加载异常把玩家永久挡在门外
                 ready = true
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                logger.error("世界配置加载失败，禁用插件", e)
+                ready = false
+                if (isEnabled) {
+                    server.globalRegionScheduler.run(this@SimpleWorld) {
+                        server.pluginManager.disablePlugin(this@SimpleWorld)
+                    }
+                }
             }
         }
 
@@ -79,39 +94,50 @@ class SimpleWorld : JavaPlugin() {
     override fun onDisable() {
         val prefix = pluginMeta.loggerPrefix ?: pluginMeta.name
         slF4JLogger.info("Disabled {} {}", prefix, pluginMeta.version)
-        slF4JLogger.info("开始保存,最多等待 {}", shutdownTimeout)
-        try {
-            runBlocking {
-                withTimeout(shutdownTimeout) { worldManager?.shutdown() }
+        if (worldConfigLoaded) {
+            slF4JLogger.info("开始保存,最多等待 {}", shutdownTimeout)
+            try {
+                runBlocking {
+                    withTimeout(shutdownTimeout) { worldManager?.shutdown() }
+                }
+            } catch (e: TimeoutCancellationException) {
+                slF4JLogger.error("shutdown 超时 {},放弃", shutdownTimeout)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                slF4JLogger.error("关闭失败", e)
             }
-        } catch (e: TimeoutCancellationException) {
-            slF4JLogger.error("shutdown 超时 {},放弃", shutdownTimeout)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            slF4JLogger.error("关闭失败", e)
+        } else {
+            slF4JLogger.warn("世界配置未成功加载，跳过保存")
         }
         scope?.cancel()
         this.scope = null
         this.worldManager = null
+        worldConfigLoaded = false
     }
 
-    /**
-     * 在全局区域线程上执行 [block] 并返回其结果。
-     *
-     * - 已在全局区域线程，或插件正在关闭（onDisable 时 isEnabled 为 false，调度器会拒绝注册任务）
-     *   → 直接内联执行；
-     * - 否则派到全局区域线程，挂起等待（不阻塞当前线程）。
-     *
-     * 内联那条分支让本函数“可重入”：在全局 tick 线程上再次调用也不会因
-     * “任务排到下一 tick + 当前 tick 被阻塞”而自锁。
-     */
-    suspend fun <T> runGlobalRegion(block: () -> T): T {
+    suspend fun <T> runGlobalRegionAndWait(block: () -> T): T {
         if (server.isGlobalTickThread || !isEnabled) {
             return block()
         }
         return suspendCancellableCoroutine { continuation ->
             val scheduledTask = server.globalRegionScheduler.run(this) { _ ->
+                try {
+                    continuation.resume(block())
+                } catch (e: Throwable) {
+                    continuation.resumeWithException(e)
+                }
+            }
+            continuation.invokeOnCancellation { scheduledTask.cancel() }
+        }
+    }
+
+    suspend fun <T> runRegionAndWait(world: World, chunkX: Int, chunkZ: Int, block: () -> T): T {
+        if (server.isOwnedByCurrentRegion(world, chunkX, chunkZ) || !isEnabled) {
+            return block()
+        }
+        return suspendCancellableCoroutine { continuation ->
+            val scheduledTask = server.regionScheduler.run(this, world, chunkX, chunkZ) { _ ->
                 try {
                     continuation.resume(block())
                 } catch (e: Throwable) {
