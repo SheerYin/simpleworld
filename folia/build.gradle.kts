@@ -32,6 +32,7 @@ dependencies {
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.jdk8)
 }
 
 val minecraftPluginName = "SimpleWorld"

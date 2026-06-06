@@ -5,14 +5,16 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.future.future
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import me.yin.simpleworld.command.support.CommandSupport
 import me.yin.simpleworld.world.LoadWorldResult
 import me.yin.simpleworld.world.WorldManager
 import org.bukkit.NamespacedKey
 import org.bukkit.command.CommandSender
 import java.nio.file.Files
-import java.util.concurrent.CompletableFuture
 import kotlin.io.path.isDirectory
 
 class LoadCommand(
@@ -21,6 +23,10 @@ class LoadCommand(
 ) {
 
     private val plugin = support.plugin
+    private val coroutineScope = support.scope
+
+    @Volatile
+    var loadSuggestionSemaphore = Semaphore(2)
 
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("load")
@@ -28,24 +34,30 @@ class LoadCommand(
             .then(Commands.argument("name", StringArgumentType.string())
                 .suggests { _, builder ->
                     val remaining = builder.remainingLowerCase
-                    CompletableFuture.supplyAsync {
-                        val keys = mutableSetOf<NamespacedKey>()
-                        val minecraft = plugin.server.levelDirectory.resolve("dimensions").resolve(NamespacedKey.MINECRAFT)
-                        if (minecraft.isDirectory()) {
-                            Files.list(minecraft).use { dimensionPaths ->
-                                dimensionPaths
-                                    .filter { it.isDirectory() }
-                                    .map { NamespacedKey.minecraft(it.fileName.toString()) }
-                                    .filter { plugin.server.getWorld(it) == null }
-                                    .forEach { keys += it }
+                    coroutineScope.future {
+                        loadSuggestionSemaphore.withPermit {
+                            val keys = mutableSetOf<NamespacedKey>()
+                            val minecraft = plugin.server.levelDirectory.resolve("dimensions").resolve(NamespacedKey.MINECRAFT)
+                            if (minecraft.isDirectory()) {
+                                Files.list(minecraft).use { dimensionPaths ->
+                                    dimensionPaths
+                                        .filter { it.isDirectory() }
+                                        .forEach { path ->
+                                            val key = runCatching { NamespacedKey.minecraft(path.fileName.toString()) }.getOrNull()
+                                                ?: return@forEach
+                                            if (plugin.server.getWorld(key) == null) {
+                                                keys += key
+                                            }
+                                        }
+                                }
                             }
-                        }
-                        for (key in keys.map { it.toString() }.sorted()) {
-                            if (key.contains(remaining, true)) {
-                                builder.suggest("\"$key\"")
+                            for (key in keys.map { it.toString() }.sorted()) {
+                                if (key.contains(remaining, true)) {
+                                    builder.suggest("\"$key\"")
+                                }
                             }
+                            builder.build()
                         }
-                        builder.build()
                     }
                 }
                 .executes { context ->
