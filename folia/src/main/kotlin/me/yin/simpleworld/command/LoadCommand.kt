@@ -31,22 +31,30 @@ class LoadCommand(
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("load")
             .requires { support.hasPermission(it, support.permissionLoad) }
-            .then(Commands.argument("name", StringArgumentType.string())
+            .then(Commands.argument("key", StringArgumentType.string())
                 .suggests { _, builder ->
                     val remaining = builder.remainingLowerCase
                     coroutineScope.future {
                         loadSuggestionSemaphore.withPermit {
                             val keys = mutableSetOf<NamespacedKey>()
-                            val minecraft = plugin.server.levelDirectory.resolve("dimensions").resolve(NamespacedKey.MINECRAFT)
-                            if (minecraft.isDirectory()) {
-                                Files.list(minecraft).use { dimensionPaths ->
-                                    dimensionPaths
+                            val dimensions = plugin.server.levelDirectory.resolve("dimensions")
+                            if (dimensions.isDirectory()) {
+                                Files.list(dimensions).use { namespacePaths ->
+                                    namespacePaths
                                         .filter { it.isDirectory() }
-                                        .forEach { path ->
-                                            val key = runCatching { NamespacedKey.minecraft(path.fileName.toString()) }.getOrNull()
-                                                ?: return@forEach
-                                            if (plugin.server.getWorld(key) == null) {
-                                                keys += key
+                                        .forEach { namespacePath ->
+                                            val namespace = namespacePath.fileName.toString()
+                                            Files.list(namespacePath).use { dimensionPaths ->
+                                                dimensionPaths
+                                                    .filter { it.isDirectory() }
+                                                    .forEach { path ->
+                                                        val dimension = path.fileName.toString()
+                                                        val key = runCatching { NamespacedKey.fromString("$namespace:$dimension") }
+                                                            .getOrNull()
+                                                        if (key != null && plugin.server.getWorld(key) == null) {
+                                                            keys += key
+                                                        }
+                                                    }
                                             }
                                         }
                                 }
@@ -62,7 +70,7 @@ class LoadCommand(
                 }
                 .executes { context ->
                     val sender = context.source.sender
-                    val worldKey = precheck(sender, StringArgumentType.getString(context, "name"))
+                    val worldKey = precheck(sender, StringArgumentType.getString(context, "key"))
                         ?: return@executes 0
 
                     sender.sendMessage(support.prefixMessage("世界 $worldKey 加载中…"))
@@ -81,7 +89,7 @@ class LoadCommand(
                 .then(Commands.argument("chunk_generator", StringArgumentType.string())
                     .executes { context ->
                         val sender = context.source.sender
-                        val worldKey = precheck(sender, StringArgumentType.getString(context, "name"))
+                        val worldKey = precheck(sender, StringArgumentType.getString(context, "key"))
                             ?: return@executes 0
                         val generator = StringArgumentType.getString(context, "chunk_generator")
 
@@ -133,11 +141,7 @@ class LoadCommand(
             sender.sendMessage(support.prefixMessage("世界 $key 已经加载"))
             return null
         }
-        if (key.namespace != NamespacedKey.MINECRAFT) {
-            sender.sendMessage(support.prefixMessage("只支持加载 minecraft 命名空间世界：$key"))
-            return null
-        }
-        if (!plugin.server.levelDirectory.resolve("dimensions").resolve(NamespacedKey.MINECRAFT).resolve(key.key).isDirectory()) {
+        if (!plugin.server.levelDirectory.resolve("dimensions").resolve(key.namespace).resolve(key.key).isDirectory()) {
             sender.sendMessage(support.prefixMessage("没有找到世界 $key 的磁盘数据"))
             return null
         }

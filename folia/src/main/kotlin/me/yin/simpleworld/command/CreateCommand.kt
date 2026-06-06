@@ -27,10 +27,10 @@ class CreateCommand(
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("create")
             .requires { support.hasPermission(it, support.permissionCreate) }
-            .then(Commands.argument("name", StringArgumentType.word())
+            .then(Commands.argument("key", StringArgumentType.string())
                 .executes { context ->
                     val sender = context.source.sender
-                    val worldKey = precheck(sender, StringArgumentType.getString(context, "name"))
+                    val worldKey = precheck(sender, StringArgumentType.getString(context, "key"))
                         ?: return@executes 0
 
                     sender.sendMessage(support.prefixMessage("世界 $worldKey 创建中…"))
@@ -53,7 +53,7 @@ class CreateCommand(
                     }
                     .executes { context ->
                         val sender = context.source.sender
-                        val worldKey = precheck(sender, StringArgumentType.getString(context, "name"))
+                        val worldKey = precheck(sender, StringArgumentType.getString(context, "key"))
                             ?: return@executes 0
                         val seed = StringArgumentType.getString(context, "seed").toLongOrNull()
 
@@ -83,7 +83,7 @@ class CreateCommand(
                         }
                         .executes { context ->
                             val sender = context.source.sender
-                            val worldKey = precheck(sender, StringArgumentType.getString(context, "name"))
+                            val worldKey = precheck(sender, StringArgumentType.getString(context, "key"))
                                 ?: return@executes 0
                             val seed = StringArgumentType.getString(context, "seed").toLongOrNull()
                             val environment = parseEnvironment(sender, StringArgumentType.getString(context, "environment"))
@@ -115,7 +115,7 @@ class CreateCommand(
                             }
                             .executes { context ->
                                 val sender = context.source.sender
-                                val worldKey = precheck(sender, StringArgumentType.getString(context, "name"))
+                                val worldKey = precheck(sender, StringArgumentType.getString(context, "key"))
                                     ?: return@executes 0
                                 val seed = StringArgumentType.getString(context, "seed").toLongOrNull()
                                 val environment = parseEnvironment(sender, StringArgumentType.getString(context, "environment"))
@@ -138,7 +138,7 @@ class CreateCommand(
                             .then(Commands.argument("chunk_generator", StringArgumentType.string())
                                 .executes { context ->
                                     val sender = context.source.sender
-                                    val worldKey = precheck(sender, StringArgumentType.getString(context, "name"))
+                                    val worldKey = precheck(sender, StringArgumentType.getString(context, "key"))
                                         ?: return@executes 0
                                     val seed = StringArgumentType.getString(context, "seed").toLongOrNull()
                                     val environment = parseEnvironment(sender, StringArgumentType.getString(context, "environment"))
@@ -204,9 +204,9 @@ class CreateCommand(
     }
 
     private fun precheck(sender: CommandSender, worldName: String): NamespacedKey? {
-        val key = runCatching { NamespacedKey.minecraft(worldName) }.getOrNull()
+        val key = runCatching { NamespacedKey.fromString(worldName) }.getOrNull()
         if (key == null) {
-            sender.sendMessage(support.prefixMessage("世界 $worldName 不是合法名称"))
+            sender.sendMessage(support.prefixMessage("世界 $worldName 不是合法 key"))
             return null
         }
         if (plugin.server.getWorld(key) != null) {

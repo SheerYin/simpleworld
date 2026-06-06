@@ -249,10 +249,7 @@ class WorldManager(
                 "minecraft:overworld" -> World.Environment.NORMAL
                 "minecraft:the_nether" -> World.Environment.NETHER
                 "minecraft:the_end" -> World.Environment.THE_END
-                else -> {
-                    logger.warn("世界 {} 未记录可创建环境，跳过 WorldCreator 加载", key)
-                    return LoadWorldResult.Failed
-                }
+                else -> World.Environment.NORMAL
             }
         } else {
             val resolved = runCatching { World.Environment.valueOf(environmentText) }.getOrNull()

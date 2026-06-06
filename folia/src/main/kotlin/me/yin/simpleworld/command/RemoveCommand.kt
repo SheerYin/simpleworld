@@ -16,7 +16,7 @@ class RemoveCommand(
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("remove")
             .requires { support.hasPermission(it, support.permissionRemove) }
-            .then(Commands.argument("name", StringArgumentType.string())
+            .then(Commands.argument("key", StringArgumentType.string())
                 .suggests { _, builder ->
                     val remaining = builder.remainingLowerCase
                     val keys = worldManager.unloadedWorlds.keys.map { it.toString() }.sorted()
@@ -29,7 +29,7 @@ class RemoveCommand(
                 }
                 .executes { context ->
                     val sender = context.source.sender
-                    val worldKeyText = StringArgumentType.getString(context, "name")
+                    val worldKeyText = StringArgumentType.getString(context, "key")
                     val worldKey = runCatching { NamespacedKey.fromString(worldKeyText) }.getOrNull()
                     if (worldKey == null) {
                         sender.sendMessage(support.prefixMessage("世界 $worldKeyText 不是合法 key"))

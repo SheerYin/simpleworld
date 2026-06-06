@@ -22,7 +22,7 @@ class UnloadCommand(
     fun root(): LiteralArgumentBuilder<CommandSourceStack> {
         return Commands.literal("unload")
             .requires { support.hasPermission(it, support.permissionUnload) }
-            .then(Commands.argument("name", StringArgumentType.string())
+            .then(Commands.argument("key", StringArgumentType.string())
                 .suggests { _, builder ->
                     val remaining = builder.remainingLowerCase
                     for (world in plugin.server.worlds) {
@@ -35,7 +35,7 @@ class UnloadCommand(
                 }
                 .executes { context ->
                     val sender = context.source.sender
-                    val worldKeyText = StringArgumentType.getString(context, "name")
+                    val worldKeyText = StringArgumentType.getString(context, "key")
                     val worldKey = runCatching { NamespacedKey.fromString(worldKeyText) }.getOrNull()
                     if (worldKey == null) {
                         sender.sendMessage(support.prefixMessage("世界 $worldKeyText 不是合法 key"))
