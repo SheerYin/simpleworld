@@ -4,11 +4,10 @@ kotlinxSerialization = "1.10.0"
 coroutines = "1.10.2"
 shadow = "9.4.1"
 resourceFactoryPaper = "1.3.1"
-paperweightUserdev = "2.0.0-beta.21"
+canvasWeaverUserdev = "2.4.4"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
-kotlinx-coroutines-jdk8 = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8", version.ref = "coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
 [plugins]
@@ -16,4 +15,4 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlinJvm" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinJvm" }
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 resource-factory-paper = { id = "xyz.jpenilla.resource-factory-paper-convention", version.ref = "resourceFactoryPaper" }
-paperweight-userdev = { id = "io.papermc.paperweight.userdev", version.ref = "paperweightUserdev" }
+canvas-weaver-userdev = { id = "io.canvasmc.weaver.userdev", version.ref = "canvasWeaverUserdev" }

@@ -10,7 +10,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.shadow)
-    alias(libs.plugins.paperweight.userdev)
+    alias(libs.plugins.canvas.weaver.userdev)
     alias(libs.plugins.resource.factory.paper)
 }
 
@@ -24,15 +24,14 @@ kotlin {
 repositories {
     mavenLocal()
     mavenCentral()
-    maven("https://repo.papermc.io/repository/maven-public/")
+    maven("https://maven.canvasmc.io/releases")
 }
 
 dependencies {
-    paperweight.foliaDevBundle("26.1.2.build.+")
+    paperweight.canvasDevBundle("26.1.2.build.+")
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.kotlinx.coroutines.jdk8)
 }
 
 val minecraftPluginName = "SimpleWorld"

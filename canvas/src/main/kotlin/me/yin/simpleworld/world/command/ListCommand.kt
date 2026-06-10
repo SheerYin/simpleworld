@@ -1,12 +1,12 @@
-package me.yin.simpleworld.command
+package me.yin.simpleworld.world.command
 
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
-import me.yin.simpleworld.command.support.CommandSupport
-import me.yin.simpleworld.model.WorldConfiguration
-import me.yin.simpleworld.world.WorldManager
+import me.yin.simpleworld.world.command.support.CommandSupport
+import me.yin.simpleworld.world.manager.WorldManager
+import me.yin.simpleworld.world.model.WorldConfiguration
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.event.ClickEvent
 import net.kyori.adventure.text.event.HoverEvent

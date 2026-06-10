@@ -1,6 +1,8 @@
-package me.yin.simpleworld.model
+package me.yin.simpleworld.world.model
 
 import kotlinx.serialization.Serializable
+import me.yin.simpleworld.model.NamespacedKeySerializer
+import me.yin.simpleworld.model.Position
 import org.bukkit.NamespacedKey
 
 @Serializable

@@ -1,11 +1,11 @@
-package me.yin.simpleworld.command
+package me.yin.simpleworld.world.command
 
 import io.papermc.paper.command.brigadier.Commands
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents
 import kotlinx.coroutines.CoroutineScope
 import me.yin.simpleworld.SimpleWorld
-import me.yin.simpleworld.command.support.CommandSupport
-import me.yin.simpleworld.world.WorldManager
+import me.yin.simpleworld.world.command.support.CommandSupport
+import me.yin.simpleworld.world.manager.WorldManager
 import org.slf4j.Logger
 
 class SimpleWorldCommand(
@@ -19,8 +19,6 @@ class SimpleWorldCommand(
     fun register() {
         plugin.lifecycleManager.registerEventHandler(LifecycleEvents.COMMANDS) { event ->
             val support = CommandSupport(plugin, logger, prefix, scope)
-            // create/load/unload 在 Folia 上一律注册：执行函数会返回 Unsupported，
-            // 由命令给出清晰的“不支持”提示，而不是让命令在 Folia 上凭空消失。
             val rootBuilder = Commands.literal(MAIN_COMMAND)
                 .requires { support.hasPermission(it, support.permissionRoot) }
                 .then(ReloadCommand(support, worldManager).root())

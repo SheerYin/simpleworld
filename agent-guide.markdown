@@ -12,36 +12,36 @@
 
 - 除非明确需要，一般不主动执行完整构建。
 - 代码以可读性优先，避免过度使用难懂的语法糖。
-- 服务端侧实现优先按 Folia 语义编写；Folia 兼容 Paper 时，不为 Paper 单独退回传统 Bukkit/Paper 主线程写法。
-- 服务端侧命令优先按 Folia/Paper 的 Paper Brigadier API 和 lifecycle command registration 编写；Velocity 使用 `BrigadierCommand` / `CommandManager`。
+- 服务端侧实现按 Canvas 独占目标编写，优先参考当前 Canvas dev bundle 暴露的 API。
+- 服务端侧命令优先按 Paper Brigadier API 和 lifecycle command registration 编写；Velocity 使用 `BrigadierCommand` / `CommandManager`。
 - 涉及 `paper-plugin.yml`、插件依赖、Bootstrapper 或 `PluginLoader` 时优先参考 Paper 插件加载相关文档。
 - 发送玩家可见文本时优先使用 Adventure Component/Audience API，避免 legacy color code 字符串。
 - 修改物品数据时优先参考 Paper Data Component API；注意该 API 仍处于实验阶段，跨版本兼容性以实际目标版本为准。
 - 保存插件自定义持久化数据或标记时优先使用 Persistent Data Container（PDC），避免依赖 lore、显示名或内部 NBT。
-- 使用调度器时统一优先使用 Folia scheduler；即使目标是 Paper，也推荐按 Folia 的全局/区域线程语义编写，避免依赖传统 Bukkit 主线程假设。
-- 脚本中发起 Folia/Paper 调度任务时需要考虑 `plugin.isEnabled`；否则服务器关闭后仍尝试调度会抛出异常，这在延迟任务、协程 `delay` 后恢复、`onDisable` 执行清理或 `onClose { ... }` 中尤其常见。
-- 不假设存在唯一主线程；涉及世界、实体、区块、玩家状态的操作必须回到对应的 Folia 全局/区域/实体调度器。
-- IO、数据库、Redis、网络请求等阻塞操作放到协程 IO 线程或其它异步执行环境中；完成后再切回合适的 Folia scheduler 操作游戏对象。
+- 使用调度器时统一优先使用 Canvas/Paper 暴露的全局、区域、实体调度器，避免依赖传统 Bukkit 主线程假设。
+- 脚本中发起调度任务时需要考虑 `plugin.isEnabled`；否则服务器关闭后仍尝试调度会抛出异常，这在延迟任务、协程 `delay` 后恢复、`onDisable` 执行清理或 `onClose { ... }` 中尤其常见。
+- 不假设存在唯一主线程；涉及世界、实体、区块、玩家状态的操作必须回到对应的全局/区域/实体调度器。
+- IO、数据库、Redis、网络请求等阻塞操作放到协程 IO 线程或其它异步执行环境中；完成后再切回合适的 scheduler 操作游戏对象。
 - 不在区域线程或全局线程上阻塞等待 `Future`、数据库、网络或长时间计算；需要等待结果时使用 suspend/callback 组合。
 - 涉及跨区块/未加载区块传送时优先参考异步传送 API，不要在主线程阻塞等待 future。
 - 配置文件读写优先使用 Configurate；Kotlin 项目优先结合 `configurate-yaml` 与 `configurate-extra-kotlin`。
 
-## Paper/Folia 源码参考
+## Canvas/Paper 源码参考
 
 需要查服务端源码、API 实现或补丁时，先看当前模块的 Gradle 依赖使用的是哪一种 paperweight userdev bundle：
 
 - Paper：`paperweight.paperDevBundle(...)`
-- Folia：`paperweight.foliaDevBundle(...)`
+- Canvas：`paperweight.canvasDevBundle(...)`
 
-Paper 和 Folia 都通过 `paperweight-userdev` 插件接入开发依赖；区别在于使用的 dev bundle 不同。确认目标以后，优先看全局 Gradle 用户缓存里的 paperweight work 目录。
+Paper 和 Canvas 都通过 paperweight 接入开发依赖；区别在于使用的 dev bundle 和 userdev 插件不同。确认目标以后，优先看全局 Gradle 用户缓存里的 paperweight work 目录。
 
 | 位置 | 内容 |
 |------|------|
-| Gradle 模块缓存里的 dev bundle zip | Paper/Folia dev bundle，包含对应服务端的补丁和元数据 |
+| Gradle 模块缓存里的 dev bundle zip | Paper/Canvas dev bundle，包含对应服务端的补丁和元数据 |
 | Windows：`%USERPROFILE%\.gradle\caches\paperweight-userdev\v2\work\setupMacheSources_*\output.zip` | 反编译、映射后的 vanilla/Mojang 源码包 |
-| Windows：`%USERPROFILE%\.gradle\caches\paperweight-userdev\v2\work\applyDevBundlePatches_*\output.jar` | 应用当前 Paper/Folia dev bundle 补丁后的源码与产物 |
+| Windows：`%USERPROFILE%\.gradle\caches\paperweight-userdev\v2\work\applyDevBundlePatches_*\output.jar` | 应用当前 Paper/Canvas dev bundle 补丁后的源码与产物 |
 | Linux：`~/.gradle/caches/paperweight-userdev/v2/work/setupMacheSources_*/output.zip` | 反编译、映射后的 vanilla/Mojang 源码包 |
-| Linux：`~/.gradle/caches/paperweight-userdev/v2/work/applyDevBundlePatches_*/output.jar` | 应用当前 Paper/Folia dev bundle 补丁后的源码与产物 |
+| Linux：`~/.gradle/caches/paperweight-userdev/v2/work/applyDevBundlePatches_*/output.jar` | 应用当前 Paper/Canvas dev bundle 补丁后的源码与产物 |
 | 项目 `.gradle/caches/paperweight/` | 当前项目的 paperweight 辅助任务缓存，通常不是完整源码入口 |
 
 ## 参考文档

@@ -1,17 +1,15 @@
-package me.yin.simpleworld.command
+package me.yin.simpleworld.world.command
 
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.future.future
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import me.yin.simpleworld.command.support.CommandSupport
-import me.yin.simpleworld.world.LoadWorldResult
-import me.yin.simpleworld.world.WorldManager
+import me.yin.simpleworld.world.command.support.CommandSupport
+import me.yin.simpleworld.world.manager.LoadWorldEvent
+import me.yin.simpleworld.world.manager.WorldManager
 import org.bukkit.NamespacedKey
 import org.bukkit.command.CommandSender
 import java.nio.file.Files
@@ -73,60 +71,38 @@ class LoadCommand(
                     val worldKey = precheck(sender, StringArgumentType.getString(context, "key"))
                         ?: return@executes 0
 
-                    sender.sendMessage(support.prefixMessage("世界 $worldKey 加载中…"))
-                    support.scope.launch {
-                        try {
-                            handleResult(sender, worldKey, worldManager.tryLoadWorld(worldKey))
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (e: Exception) {
-                            support.logger.error("加载失败", e)
-                            sender.sendMessage(support.prefixMessage("世界 $worldKey 加载失败：${e.message}"))
-                        }
+                    worldManager.loadWorld(worldKey) { result ->
+                        handleResult(sender, worldKey, result)
                     }
+                    sender.sendMessage(support.prefixMessage("世界 $worldKey 加载已提交"))
                     return@executes 1
                 }
-                .then(Commands.argument("chunk_generator", StringArgumentType.string())
-                    .executes { context ->
-                        val sender = context.source.sender
-                        val worldKey = precheck(sender, StringArgumentType.getString(context, "key"))
-                            ?: return@executes 0
-                        val generator = StringArgumentType.getString(context, "chunk_generator")
-
-                        sender.sendMessage(support.prefixMessage("世界 $worldKey 加载中…"))
-                        support.scope.launch {
-                            try {
-                                handleResult(sender, worldKey, worldManager.tryLoadWorld(worldKey, generator))
-                            } catch (e: CancellationException) {
-                                throw e
-                            } catch (e: Exception) {
-                                support.logger.error("加载失败", e)
-                                sender.sendMessage(support.prefixMessage("世界 $worldKey 加载失败：${e.message}"))
-                            }
-                        }
-                        return@executes 1
-                    }
-                )
         )
     }
 
-    private suspend fun handleResult(sender: CommandSender, worldKey: NamespacedKey, result: LoadWorldResult) {
+    private fun handleResult(sender: CommandSender, worldKey: NamespacedKey, result: LoadWorldEvent) {
         when (result) {
-            is LoadWorldResult.Success -> {
-                worldManager.save()
-                sender.sendMessage(support.prefixMessage("世界 $worldKey 加载完成"))
+            is LoadWorldEvent.Loaded -> {
+                sender.sendMessage(support.prefixMessage("世界 ${result.world.key} 加载完成"))
             }
-            LoadWorldResult.AlreadyLoaded -> {
+            LoadWorldEvent.AlreadyLoaded -> {
                 sender.sendMessage(support.prefixMessage("世界 $worldKey 已经加载"))
             }
-            LoadWorldResult.Failed -> {
+            LoadWorldEvent.Busy -> {
+                sender.sendMessage(support.prefixMessage("已有世界状态更新正在进行，请稍后再试"))
+            }
+            is LoadWorldEvent.InvalidEnvironment -> {
+                sender.sendMessage(support.prefixMessage("世界 $worldKey 的环境 ${result.value} 不能用于加载"))
+            }
+            is LoadWorldEvent.InvalidWorldType -> {
+                sender.sendMessage(support.prefixMessage("世界 $worldKey 的 Bukkit 类型 ${result.value} 不能用于加载"))
+            }
+            LoadWorldEvent.Failed -> {
                 sender.sendMessage(support.prefixMessage("世界 $worldKey 加载失败"))
             }
-            LoadWorldResult.Busy -> {
-                sender.sendMessage(support.prefixMessage("已有世界操作或保存加载在进行中，请稍后再试"))
-            }
-            LoadWorldResult.Unsupported -> {
-                sender.sendMessage(support.prefixMessage("当前服务端（Folia）不支持加载世界"))
+            is LoadWorldEvent.FailedWithException -> {
+                support.logger.error("加载世界失败", result.exception)
+                sender.sendMessage(support.prefixMessage("世界 $worldKey 加载失败：${result.exception.message}"))
             }
         }
     }

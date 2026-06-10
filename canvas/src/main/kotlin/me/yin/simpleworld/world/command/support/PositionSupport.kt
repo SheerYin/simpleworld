@@ -1,4 +1,4 @@
-package me.yin.simpleworld.command.support
+package me.yin.simpleworld.world.command.support
 
 import org.bukkit.Location
 import org.bukkit.World

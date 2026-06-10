@@ -1,4 +1,4 @@
-package me.yin.simpleworld.command.support
+package me.yin.simpleworld.world.command.support
 
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.RequiredArgumentBuilder

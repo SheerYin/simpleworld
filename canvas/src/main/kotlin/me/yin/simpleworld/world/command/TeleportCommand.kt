@@ -1,4 +1,4 @@
-package me.yin.simpleworld.command
+package me.yin.simpleworld.world.command
 
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
@@ -6,8 +6,8 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
-import me.yin.simpleworld.command.support.CommandSupport
-import me.yin.simpleworld.command.support.PositionSupport
+import me.yin.simpleworld.world.command.support.CommandSupport
+import me.yin.simpleworld.world.command.support.PositionSupport
 import org.bukkit.Location
 import org.bukkit.NamespacedKey
 import org.bukkit.World
