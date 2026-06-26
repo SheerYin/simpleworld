@@ -4,31 +4,36 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.future.future
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import me.yin.simpleworld.SimpleWorld
 import me.yin.simpleworld.world.command.support.CommandSupport
 import me.yin.simpleworld.world.manager.LoadWorldEvent
 import me.yin.simpleworld.world.manager.WorldManager
+import me.yin.simpleworld.world.permission.WorldPermissions
 import org.bukkit.NamespacedKey
 import org.bukkit.command.CommandSender
+import org.slf4j.Logger
 import java.nio.file.Files
 import kotlin.io.path.isDirectory
 
 class LoadCommand(
+    private val plugin: SimpleWorld,
+    private val logger: Logger,
+    private val coroutineScope: CoroutineScope,
     private val support: CommandSupport,
+    private val permissions: WorldPermissions,
     private val worldManager: WorldManager,
 ) {
-
-    private val plugin = support.plugin
-    private val coroutineScope = support.scope
 
     @Volatile
     var loadSuggestionSemaphore = Semaphore(2)
 
-    fun root(): LiteralArgumentBuilder<CommandSourceStack> {
-        return Commands.literal("load")
-            .requires { support.hasPermission(it, support.permissionLoad) }
+    fun loadBuilder(name: String = "load"): LiteralArgumentBuilder<CommandSourceStack> {
+        return Commands.literal(name)
+            .requires { it.sender.hasPermission(permissions.loadCommand) }
             .then(Commands.argument("key", StringArgumentType.string())
                 .suggests { _, builder ->
                     val remaining = builder.remainingLowerCase
@@ -101,7 +106,7 @@ class LoadCommand(
                 sender.sendMessage(support.prefixMessage("世界 $worldKey 加载失败"))
             }
             is LoadWorldEvent.FailedWithException -> {
-                support.logger.error("加载世界失败", result.exception)
+                logger.error("加载世界失败", result.exception)
                 sender.sendMessage(support.prefixMessage("世界 $worldKey 加载失败：${result.exception.message}"))
             }
         }

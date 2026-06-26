@@ -5,15 +5,17 @@ import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
 import me.yin.simpleworld.world.command.support.CommandSupport
 import me.yin.simpleworld.world.manager.WorldManager
+import me.yin.simpleworld.world.permission.WorldPermissions
 
 class ReloadCommand(
     private val support: CommandSupport,
+    private val permissions: WorldPermissions,
     private val worldManager: WorldManager,
 ) {
 
-    fun root(): LiteralArgumentBuilder<CommandSourceStack> {
-        return Commands.literal("reload")
-            .requires { support.hasPermission(it, support.permissionReload) }
+    fun reloadBuilder(name: String = "reload"): LiteralArgumentBuilder<CommandSourceStack> {
+        return Commands.literal(name)
+            .requires { it.sender.hasPermission(permissions.reloadCommand) }
             .executes { context ->
                 val sender = context.source.sender
                 worldManager.tryLoadWorlds()

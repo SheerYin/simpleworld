@@ -6,20 +6,24 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
+import me.yin.simpleworld.SimpleWorld
 import me.yin.simpleworld.world.command.support.CommandSupport
 import me.yin.simpleworld.world.command.support.PositionSupport
+import me.yin.simpleworld.world.permission.WorldPermissions
 import org.bukkit.Location
 import org.bukkit.NamespacedKey
 import org.bukkit.World
 import org.bukkit.command.CommandSender
 
 class SetSpawnCommand(
+    private val plugin: SimpleWorld,
     private val support: CommandSupport,
+    private val permissions: WorldPermissions,
 ) {
 
-    fun root(): LiteralArgumentBuilder<CommandSourceStack> {
-        return Commands.literal("setspawn")
-            .requires { support.hasPermission(it, support.permissionSetSpawn) }
+    fun setSpawnBuilder(name: String = "setspawn"): LiteralArgumentBuilder<CommandSourceStack> {
+        return Commands.literal(name)
+            .requires { it.sender.hasPermission(permissions.setSpawnCommand) }
             .executes { context -> setFromPlayer(context) }
             .then(worldArgument()
                 .then(positionArgument()
@@ -31,7 +35,7 @@ class SetSpawnCommand(
     private fun setFromPlayer(context: CommandContext<CommandSourceStack>): Int {
         val player = support.requirePlayer(context.source.sender) ?: return 0
         val location = player.location
-        support.plugin.server.globalRegionScheduler.run(support.plugin) {
+        plugin.server.globalRegionScheduler.run(plugin) {
             location.world.setSpawnLocation(location)
         }
         player.sendMessage(
@@ -45,7 +49,7 @@ class SetSpawnCommand(
         val world = resolveWorld(sender, context) ?: return 0
         val locationText = StringArgumentType.getString(context, "position")
         val location = parsePosition(sender, world, locationText) ?: return 0
-        support.plugin.server.globalRegionScheduler.run(support.plugin) {
+        plugin.server.globalRegionScheduler.run(plugin) {
             world.setSpawnLocation(location)
         }
         sender.sendMessage(
@@ -57,7 +61,7 @@ class SetSpawnCommand(
     private fun resolveWorld(sender: CommandSender, context: CommandContext<CommandSourceStack>): World? {
         val worldKey = StringArgumentType.getString(context, "world")
         val key = runCatching { NamespacedKey.fromString(worldKey) }.getOrNull()
-        val world = if (key == null) null else support.plugin.server.getWorld(key)
+        val world = if (key == null) null else plugin.server.getWorld(key)
         if (world == null) {
             sender.sendMessage(support.prefixMessage("世界 $worldKey 不存在"))
         }
@@ -76,7 +80,7 @@ class SetSpawnCommand(
         return Commands.argument("world", StringArgumentType.string())
             .suggests { _, builder ->
                 val remaining = builder.remainingLowerCase
-                for (world in support.plugin.server.worlds) {
+                for (world in plugin.server.worlds) {
                     val key = world.key.toString()
                     if (key.contains(remaining, true)) {
                         builder.suggest("\"$key\"")
@@ -91,7 +95,7 @@ class SetSpawnCommand(
             .suggests { context, builder ->
                 val worldKey = StringArgumentType.getString(context, "world")
                 val key = runCatching { NamespacedKey.fromString(worldKey) }.getOrNull()
-                val world = if (key == null) null else support.plugin.server.getWorld(key)
+                val world = if (key == null) null else plugin.server.getWorld(key)
                 if (world != null) {
                     val location = world.spawnLocation
                     builder.suggest("\"${location.x},${location.y},${location.z},${location.yaw},${location.pitch}\"")

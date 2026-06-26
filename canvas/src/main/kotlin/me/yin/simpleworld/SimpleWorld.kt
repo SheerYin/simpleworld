@@ -12,6 +12,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import me.yin.simpleworld.world.command.SimpleWorldCommand
 import me.yin.simpleworld.world.manager.WorldManager
+import me.yin.simpleworld.world.permission.WorldPermissions
 import org.bukkit.plugin.java.JavaPlugin
 import kotlin.time.Duration.Companion.seconds
 
@@ -35,6 +36,7 @@ class SimpleWorld : JavaPlugin() {
 
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val worldManager = WorldManager(this, logger, json, scope)
+        val permissions = WorldPermissions()
         this.scope = scope
         this.worldManager = worldManager
 
@@ -54,7 +56,7 @@ class SimpleWorld : JavaPlugin() {
             }
         }
 
-        SimpleWorldCommand(this, logger, prefix, scope, worldManager).register()
+        SimpleWorldCommand(this, logger, prefix, scope, worldManager, permissions).register()
 
         logger.info("Enabled {} {}", prefix, pluginMeta.version)
     }

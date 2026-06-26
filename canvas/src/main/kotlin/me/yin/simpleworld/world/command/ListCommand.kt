@@ -4,9 +4,11 @@ import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
+import me.yin.simpleworld.SimpleWorld
 import me.yin.simpleworld.world.command.support.CommandSupport
 import me.yin.simpleworld.world.manager.WorldManager
 import me.yin.simpleworld.world.model.WorldConfiguration
+import me.yin.simpleworld.world.permission.WorldPermissions
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.event.ClickEvent
 import net.kyori.adventure.text.event.HoverEvent
@@ -16,13 +18,15 @@ import org.bukkit.World
 import org.bukkit.command.CommandSender
 
 class ListCommand(
+    private val plugin: SimpleWorld,
     private val support: CommandSupport,
+    private val permissions: WorldPermissions,
     private val worldManager: WorldManager,
 ) {
 
-    fun root(): LiteralArgumentBuilder<CommandSourceStack> {
-        return Commands.literal("list")
-            .requires { support.hasPermission(it, support.permissionList) }
+    fun listBuilder(name: String = "list"): LiteralArgumentBuilder<CommandSourceStack> {
+        return Commands.literal(name)
+            .requires { it.sender.hasPermission(permissions.listCommand) }
             .executes { context ->
                 handle(context.source.sender)
                 return@executes 1
@@ -36,7 +40,7 @@ class ListCommand(
     }
 
     private fun handle(sender: CommandSender, page: Int = 1, pageSize: Int = 10) {
-        val loadedWorlds = support.plugin.server.worlds.associateBy { it.key }
+        val loadedWorlds = plugin.server.worlds.associateBy { it.key }
         val entries = (loadedWorlds.keys + worldManager.unloadedWorlds.keys)
             .toSet()
             .sortedBy { it.toString() }

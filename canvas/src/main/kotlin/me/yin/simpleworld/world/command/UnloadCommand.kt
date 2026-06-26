@@ -5,22 +5,26 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.canvasmc.canvas.WorldUnloadResult
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
+import me.yin.simpleworld.SimpleWorld
 import me.yin.simpleworld.world.command.support.CommandSupport
 import me.yin.simpleworld.world.manager.UnloadWorldEvent
 import me.yin.simpleworld.world.manager.WorldManager
+import me.yin.simpleworld.world.permission.WorldPermissions
 import org.bukkit.NamespacedKey
 import org.bukkit.command.CommandSender
+import org.slf4j.Logger
 
 class UnloadCommand(
+    private val plugin: SimpleWorld,
+    private val logger: Logger,
     private val support: CommandSupport,
+    private val permissions: WorldPermissions,
     private val worldManager: WorldManager,
 ) {
 
-    private val plugin = support.plugin
-
-    fun root(): LiteralArgumentBuilder<CommandSourceStack> {
-        return Commands.literal("unload")
-            .requires { support.hasPermission(it, support.permissionUnload) }
+    fun unloadBuilder(name: String = "unload"): LiteralArgumentBuilder<CommandSourceStack> {
+        return Commands.literal(name)
+            .requires { it.sender.hasPermission(permissions.unloadCommand) }
             .then(Commands.argument("key", StringArgumentType.string())
                 .suggests { _, builder ->
                     val remaining = builder.remainingLowerCase
@@ -64,7 +68,7 @@ class UnloadCommand(
                 sender.sendMessage(support.prefixMessage("世界 $worldKey 未加载"))
             }
             is UnloadWorldEvent.FailedWithException -> {
-                support.logger.error("卸载失败", result.exception)
+                logger.error("卸载失败", result.exception)
                 sender.sendMessage(support.prefixMessage("世界 $worldKey 卸载失败：${result.exception.message}"))
             }
         }

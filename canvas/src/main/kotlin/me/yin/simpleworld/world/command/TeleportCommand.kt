@@ -6,8 +6,10 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
+import me.yin.simpleworld.SimpleWorld
 import me.yin.simpleworld.world.command.support.CommandSupport
 import me.yin.simpleworld.world.command.support.PositionSupport
+import me.yin.simpleworld.world.permission.WorldPermissions
 import org.bukkit.Location
 import org.bukkit.NamespacedKey
 import org.bukkit.World
@@ -15,12 +17,14 @@ import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 
 class TeleportCommand(
+    private val plugin: SimpleWorld,
     private val support: CommandSupport,
+    private val permissions: WorldPermissions,
 ) {
 
-    fun root(): LiteralArgumentBuilder<CommandSourceStack> {
-        return Commands.literal("teleport")
-            .requires { support.hasPermission(it, support.permissionTeleport) }
+    fun teleportBuilder(name: String = "teleport"): LiteralArgumentBuilder<CommandSourceStack> {
+        return Commands.literal(name)
+            .requires { it.sender.hasPermission(permissions.teleportCommand) }
             .then(support.playerNameArgument("target")
                 .then(worldArgument()
                     .executes { context -> handle(context, hasPosition = false) }
@@ -35,12 +39,12 @@ class TeleportCommand(
         val sender = context.source.sender
         val targetName = StringArgumentType.getString(context, "target")
         val target = support.resolveTarget(sender, targetName) ?: return 0
-        if (target != sender && !support.hasPermission(context.source, support.permissionTeleportTarget)) {
+        if (target != sender && !context.source.sender.hasPermission(permissions.teleportTargetCommand)) {
             sender.sendMessage(support.prefixMessage("没有权限传送其他玩家"))
             return 0
         }
         val location = resolveLocation(sender, context, hasPosition) ?: return 0
-        target.scheduler.run(support.plugin, { teleport(target, location) }, null)
+        target.scheduler.run(plugin, { teleport(target, location) }, null)
         return 1
     }
 
@@ -51,7 +55,7 @@ class TeleportCommand(
     ): Location? {
         val worldKey = StringArgumentType.getString(context, "world")
         val key = runCatching { NamespacedKey.fromString(worldKey) }.getOrNull()
-        val world = if (key == null) null else support.plugin.server.getWorld(key)
+        val world = if (key == null) null else plugin.server.getWorld(key)
         if (world == null) {
             sender.sendMessage(support.prefixMessage("世界 $worldKey 不存在"))
             return null
@@ -83,7 +87,7 @@ class TeleportCommand(
         return Commands.argument("world", StringArgumentType.string())
             .suggests { _, builder ->
                 val remaining = builder.remainingLowerCase
-                for (world in support.plugin.server.worlds) {
+                for (world in plugin.server.worlds) {
                     val key = world.key.toString()
                     if (key.contains(remaining, true)) {
                         builder.suggest("\"$key\"")
@@ -98,7 +102,7 @@ class TeleportCommand(
             .suggests { context, builder ->
                 val worldKey = StringArgumentType.getString(context, "world")
                 val key = runCatching { NamespacedKey.fromString(worldKey) }.getOrNull()
-                val world = if (key == null) null else support.plugin.server.getWorld(key)
+                val world = if (key == null) null else plugin.server.getWorld(key)
                 if (world != null) {
                     val location = world.spawnLocation
                     builder.suggest("\"${location.x},${location.y},${location.z},${location.yaw},${location.pitch}\"")

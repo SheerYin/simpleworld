@@ -7,17 +7,21 @@ import io.papermc.paper.command.brigadier.Commands
 import me.yin.simpleworld.world.command.support.CommandSupport
 import me.yin.simpleworld.world.manager.RemoveUnloadedWorldEvent
 import me.yin.simpleworld.world.manager.WorldManager
+import me.yin.simpleworld.world.permission.WorldPermissions
 import org.bukkit.NamespacedKey
 import org.bukkit.command.CommandSender
+import org.slf4j.Logger
 
 class RemoveCommand(
+    private val logger: Logger,
     private val support: CommandSupport,
+    private val permissions: WorldPermissions,
     private val worldManager: WorldManager,
 ) {
 
-    fun root(): LiteralArgumentBuilder<CommandSourceStack> {
-        return Commands.literal("remove")
-            .requires { support.hasPermission(it, support.permissionRemove) }
+    fun removeBuilder(name: String = "remove"): LiteralArgumentBuilder<CommandSourceStack> {
+        return Commands.literal(name)
+            .requires { it.sender.hasPermission(permissions.removeCommand) }
             .then(Commands.argument("key", StringArgumentType.string())
                 .suggests { _, builder ->
                     val remaining = builder.remainingLowerCase
@@ -60,7 +64,7 @@ class RemoveCommand(
                 sender.sendMessage(support.prefixMessage("没有找到世界 $worldKey 的未加载配置记录"))
             }
             is RemoveUnloadedWorldEvent.FailedWithException -> {
-                support.logger.error("移除未加载世界配置失败", result.exception)
+                logger.error("移除未加载世界配置失败", result.exception)
                 sender.sendMessage(support.prefixMessage("世界 $worldKey 的配置记录移除失败：${result.exception.message}"))
             }
         }

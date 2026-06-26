@@ -4,27 +4,31 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.papermc.paper.command.brigadier.CommandSourceStack
 import io.papermc.paper.command.brigadier.Commands
+import me.yin.simpleworld.SimpleWorld
 import me.yin.simpleworld.world.command.support.CommandSupport
 import me.yin.simpleworld.world.manager.CreateWorldEvent
 import me.yin.simpleworld.world.manager.WorldManager
+import me.yin.simpleworld.world.permission.WorldPermissions
 import org.bukkit.NamespacedKey
 import org.bukkit.World
 import org.bukkit.WorldType
 import org.bukkit.command.CommandSender
+import org.slf4j.Logger
 import kotlin.io.path.isDirectory
 
 class CreateCommand(
+    private val plugin: SimpleWorld,
+    private val logger: Logger,
     private val support: CommandSupport,
+    private val permissions: WorldPermissions,
     private val worldManager: WorldManager,
 ) {
 
-    private val plugin = support.plugin
-
     private val creatableEnvironments = World.Environment.entries.filter { it != World.Environment.CUSTOM }
 
-    fun root(): LiteralArgumentBuilder<CommandSourceStack> {
-        return Commands.literal("create")
-            .requires { support.hasPermission(it, support.permissionCreate) }
+    fun createBuilder(name: String = "create"): LiteralArgumentBuilder<CommandSourceStack> {
+        return Commands.literal(name)
+            .requires { it.sender.hasPermission(permissions.createCommand) }
             .then(Commands.argument("key", StringArgumentType.string())
                 .executes { context ->
                     val sender = context.source.sender
@@ -147,7 +151,7 @@ class CreateCommand(
                 sender.sendMessage(support.prefixMessage("世界 $worldKey 创建失败"))
             }
             is CreateWorldEvent.FailedWithException -> {
-                support.logger.error("创建世界失败", result.exception)
+                logger.error("创建世界失败", result.exception)
                 sender.sendMessage(support.prefixMessage("世界 $worldKey 创建失败：${result.exception.message}"))
             }
         }
